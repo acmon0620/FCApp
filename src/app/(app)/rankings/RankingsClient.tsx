@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { TAG_COLOR } from '@/lib/matchTags'
 
-type Tab = 'goals' | 'assists' | 'appearances' | 'yellow' | 'red'
+type Tab = 'goals' | 'assists' | 'appearances' | 'minutes' | 'yellow' | 'red'
 
 type RankingRow = {
   member_id: string
@@ -15,6 +15,7 @@ type RankingRow = {
   yellow_cards: number
   red_cards: number
   appearances: number
+  total_minutes: number
 }
 
 type Entry = { memberId: string; name: string; number: number | null; count: number }
@@ -22,7 +23,8 @@ type Entry = { memberId: string; name: string; number: number | null; count: num
 const TABS: { key: Tab; label: string; unit: string; emoji: string; col: keyof RankingRow }[] = [
   { key: 'goals',       label: '得点',    unit: '点',  emoji: '⚽', col: 'goals' },
   { key: 'assists',     label: 'アシスト', unit: 'A',   emoji: '🎯', col: 'assists' },
-  { key: 'appearances', label: '出場',    unit: '試合', emoji: '👟', col: 'appearances' },
+  { key: 'appearances', label: '試合数',  unit: '試合', emoji: '👟', col: 'appearances' },
+  { key: 'minutes',     label: '出場時間', unit: '分',  emoji: '⏱️', col: 'total_minutes' },
   { key: 'yellow',      label: '警告',    unit: '枚',  emoji: '🟨', col: 'yellow_cards' },
   { key: 'red',         label: '退場',    unit: '枚',  emoji: '🟥', col: 'red_cards' },
 ]
@@ -53,11 +55,12 @@ export default function RankingsClient({ teamId, availableTags }: { teamId: stri
       if (!cancelled) {
         setRows((data ?? []).map((r: RankingRow) => ({
           ...r,
-          goals:       Number(r.goals),
-          assists:     Number(r.assists),
-          yellow_cards: Number(r.yellow_cards),
-          red_cards:   Number(r.red_cards),
-          appearances: Number(r.appearances),
+          goals:         Number(r.goals),
+          assists:       Number(r.assists),
+          yellow_cards:  Number(r.yellow_cards),
+          red_cards:     Number(r.red_cards),
+          appearances:   Number(r.appearances),
+          total_minutes: Number(r.total_minutes),
         })))
         setLoading(false)
       }
@@ -166,12 +169,12 @@ export default function RankingsClient({ teamId, availableTags }: { teamId: stri
       </div>
 
       {/* カテゴリタブ */}
-      <div className="flex rounded-xl overflow-hidden border border-gray-200 bg-white shadow-sm">
+      <div className="flex rounded-xl overflow-x-auto border border-gray-200 bg-white shadow-sm">
         {TABS.map(t => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`flex-1 py-2.5 text-xs font-medium transition-colors flex flex-col items-center gap-0.5 ${
+            className={`flex-shrink-0 px-3 py-2.5 text-xs font-medium transition-colors flex flex-col items-center gap-0.5 min-w-[60px] ${
               tab === t.key ? 'bg-green-600 text-white' : 'text-gray-500 hover:bg-gray-50'
             }`}
           >

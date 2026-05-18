@@ -97,7 +97,13 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
 
   async function finishMatch() {
     const scoreUs = events.filter(e => e.type === 'goal').length
-    await supabase.from('matches').update({ status: 'finished', score_us: scoreUs }).eq('id', id)
+    const stillOnField = lineups.filter(l => l.end_minute == null)
+    await Promise.all([
+      supabase.from('matches').update({ status: 'finished', score_us: scoreUs }).eq('id', id),
+      ...stillOnField.map(l =>
+        supabase.from('lineups').update({ end_minute: minute }).eq('id', l.id)
+      ),
+    ])
   }
 
   async function addLineup() {

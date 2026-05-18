@@ -73,6 +73,12 @@ export default async function MatchDetailPage({ params }: Props) {
         </div>
         {isAdmin && (
           <div className="flex gap-2">
+            <Link
+              href={`/matches/${id}/edit`}
+              className="border border-gray-300 text-gray-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+            >
+              編集
+            </Link>
             {match.status === 'scheduled' && (
               <Link
                 href={`/matches/${id}/lineup`}
@@ -116,12 +122,14 @@ export default async function MatchDetailPage({ params }: Props) {
                 <th className="pb-2">名前</th>
                 <th className="pb-2">ポジション</th>
                 <th className="pb-2">出場時間</th>
+                <th className="pb-2 text-right">計</th>
               </tr>
             </thead>
             <tbody className="divide-y">
               {lineups.map(l => {
                 const m = l.members as { name: string; number: number } | null
                 const isStarter = l.start_minute === 0
+                const minutes = l.end_minute != null ? l.end_minute - l.start_minute : null
                 return (
                   <tr key={l.id}>
                     <td className="py-2">
@@ -133,7 +141,10 @@ export default async function MatchDetailPage({ params }: Props) {
                     </td>
                     <td className="py-2 text-gray-600">{l.position ?? '-'}</td>
                     <td className="py-2 text-gray-600">
-                      {l.start_minute}分 〜 {l.end_minute != null ? `${l.end_minute}分` : '終了'}
+                      {l.start_minute}分 〜 {l.end_minute != null ? `${l.end_minute}分` : '試合中'}
+                    </td>
+                    <td className="py-2 text-right font-medium text-gray-700">
+                      {minutes != null ? `${minutes}分` : '-'}
                     </td>
                   </tr>
                 )

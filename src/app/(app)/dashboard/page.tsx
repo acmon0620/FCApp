@@ -20,8 +20,13 @@ export default async function DashboardPage() {
 
   const teamId = member.team_id
 
-  // 試合一覧とランキングを並行取得
-  const [{ data: matches }, { data: scorerData }] = await Promise.all([
+  // 全試合・直近5試合・ランキングを並行取得
+  const [{ data: allMatches }, { data: recentMatches }, { data: scorerData }] = await Promise.all([
+    supabase
+      .from('matches')
+      .select('score_us, score_them')
+      .eq('team_id', teamId)
+      .eq('status', 'finished'),
     supabase
       .from('matches')
       .select('*')
@@ -36,9 +41,9 @@ export default async function DashboardPage() {
     (r: { member_name: string; goals: number }) => ({ name: r.member_name, goals: Number(r.goals) })
   )
 
-  const wins = matches?.filter(m => m.score_us > m.score_them).length ?? 0
-  const draws = matches?.filter(m => m.score_us === m.score_them).length ?? 0
-  const losses = matches?.filter(m => m.score_us < m.score_them).length ?? 0
+  const wins = allMatches?.filter(m => m.score_us > m.score_them).length ?? 0
+  const draws = allMatches?.filter(m => m.score_us === m.score_them).length ?? 0
+  const losses = allMatches?.filter(m => m.score_us < m.score_them).length ?? 0
 
   return (
     <div className="space-y-6">
@@ -62,9 +67,9 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-2 gap-6">
         <div className="bg-white rounded-xl p-5 shadow-sm">
           <h2 className="font-semibold text-gray-800 mb-3">直近の試合結果</h2>
-          {matches && matches.length > 0 ? (
+          {recentMatches && recentMatches.length > 0 ? (
             <ul className="space-y-2">
-              {matches.map(m => {
+              {recentMatches.map(m => {
                 const result = m.score_us > m.score_them ? '勝' : m.score_us === m.score_them ? '分' : '負'
                 const resultColor = result === '勝' ? 'text-green-600' : result === '分' ? 'text-yellow-500' : 'text-red-500'
                 return (
