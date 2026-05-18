@@ -4,13 +4,29 @@ import { useEffect, useState, use } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import FormationField from '@/components/FormationField'
 
 type Member = { id: string; name: string; number: number | null; position: string | null }
-type StarterEntry = { memberId: string; position: string }
-type Tab = 'starter' | 'sub'
+type StarterEntry = { memberId: string; position: string; fieldX: number; fieldY: number }
+type Tab = 'starter' | 'sub' | 'formation'
 
 const STARTER_LIMIT = 11
 const POSITIONS = ['GK', 'CB', 'LB', 'RB', 'DM', 'CM', 'LM', 'RM', 'LW', 'RW', 'CF', 'SS']
+
+// Default 4-4-2 positions (index 0 = first added player)
+const DEFAULT_POSITIONS = [
+  { x: 0.5,  y: 0.85 },
+  { x: 0.2,  y: 0.65 },
+  { x: 0.4,  y: 0.65 },
+  { x: 0.6,  y: 0.65 },
+  { x: 0.8,  y: 0.65 },
+  { x: 0.2,  y: 0.45 },
+  { x: 0.4,  y: 0.45 },
+  { x: 0.6,  y: 0.45 },
+  { x: 0.8,  y: 0.45 },
+  { x: 0.35, y: 0.2  },
+  { x: 0.65, y: 0.2  },
+]
 
 export default function LineupPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
@@ -53,7 +69,7 @@ export default function LineupPage({ params }: { params: Promise<{ id: string }>
         .order('number', { ascending: true, nullsFirst: false }),
       supabase
         .from('lineups')
-        .select('member_id, position')
+        .select('member_id, position, field_x, field_y')
         .eq('match_id', id)
         .eq('start_minute', 0)
         .is('end_minute', null),
@@ -62,13 +78,24 @@ export default function LineupPage({ params }: { params: Promise<{ id: string }>
     if (matchRes.data) setMatchOpponent(matchRes.data.opponent)
     if (membersRes.data) setMembers(membersRes.data)
     if (lineupsRes.data) {
-      setStarters(lineupsRes.data.map(l => ({ memberId: l.member_id, position: l.position ?? '' })))
+      setStarters(lineupsRes.data.map((l, i) => ({
+        memberId: l.member_id,
+        position: l.position ?? '',
+        fieldX: l.field_x ?? DEFAULT_POSITIONS[i]?.x ?? 0.5,
+        fieldY: l.field_y ?? DEFAULT_POSITIONS[i]?.y ?? 0.5,
+      })))
     }
   }
 
   function addToStarters(member: Member) {
     if (starters.length >= STARTER_LIMIT) return
-    setStarters(prev => [...prev, { memberId: member.id, position: member.position ?? '' }])
+    const def = DEFAULT_POSITIONS[starters.length] ?? { x: 0.5, y: 0.5 }
+    setStarters(prev => [...prev, {
+      memberId: member.id,
+      position: member.position ?? '',
+      fieldX: def.x,
+      fieldY: def.y,
+    }])
   }
 
   function removeFromStarters(memberId: string) {
@@ -77,6 +104,10 @@ export default function LineupPage({ params }: { params: Promise<{ id: string }>
 
   function updatePosition(memberId: string, pos: string) {
     setStarters(prev => prev.map(s => s.memberId === memberId ? { ...s, position: pos } : s))
+  }
+
+  function handleFieldMove(memberId: string, x: number, y: number) {
+    setStarters(prev => prev.map(s => s.memberId === memberId ? { ...s, fieldX: x, fieldY: y } : s))
   }
 
   async function saveLineup() {
@@ -96,6 +127,8 @@ export default function LineupPage({ params }: { params: Promise<{ id: string }>
           member_id: s.memberId,
           position: s.position || null,
           start_minute: 0,
+          field_x: s.fieldX,
+          field_y: s.fieldY,
         }))
       )
     }
@@ -136,6 +169,14 @@ export default function LineupPage({ params }: { params: Promise<{ id: string }>
           }`}
         >
           サブ　{subMembers.length}人
+        </button>
+        <button
+          onClick={() => setTab('formation')}
+          className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
+            tab === 'formation' ? 'bg-green-600 text-white' : 'text-gray-500 hover:bg-gray-50'
+          }`}
+        >
+          ⚽ 配置
         </button>
       </div>
 
@@ -251,6 +292,28 @@ export default function LineupPage({ params }: { params: Promise<{ id: string }>
               )}
             </button>
           ))}
+        </div>
+      )}
+
+      {/* フォーメーションタブ */}
+      {tab === 'formation' && (
+        <div className="space-y-3">
+          {starters.length === 0 ? (
+            <div className="bg-white rounded-xl p-8 shadow-sm text-center text-gray-400 text-sm">
+              先発メンバーを追加するとフィールドに表示されます
+            </div>
+          ) : (
+            <>
+              <p className="text-xs text-gray-500">選手アイコンをドラッグして配置を調整できます</p>
+              <FormationField
+                players={starters.map(s => {
+                  const member = members.find(m => m.id === s.memberId)
+                  return { id: s.memberId, number: member?.number ?? null, x: s.fieldX, y: s.fieldY }
+                })}
+                onMove={handleFieldMove}
+              />
+            </>
+          )}
         </div>
       )}
 

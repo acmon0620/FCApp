@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { TAG_COLOR } from '@/lib/matchTags'
+import FormationField from '@/components/FormationField'
 
 type Props = { params: Promise<{ id: string }> }
 
@@ -42,6 +43,14 @@ export default async function MatchDetailPage({ params }: Props) {
     .order('minute')
 
   const isAdmin = member.role === 'admin'
+
+  const starters = (lineups ?? []).filter(l => l.start_minute === 0)
+  const formationPlayers = starters
+    .filter(l => l.field_x != null && l.field_y != null)
+    .map(l => {
+      const m = l.members as { name: string; number: number | null } | null
+      return { id: l.id, number: m?.number ?? null, x: l.field_x as number, y: l.field_y as number }
+    })
 
   const eventIcon: Record<string, string> = {
     goal: '⚽',
@@ -103,6 +112,13 @@ export default async function MatchDetailPage({ params }: Props) {
             {match.score_us} <span className="text-gray-300">-</span> {match.score_them}
           </p>
           <p className="text-gray-500 mt-1">自チーム · 相手</p>
+        </div>
+      )}
+
+      {formationPlayers.length > 0 && (
+        <div className="bg-white rounded-xl p-5 shadow-sm">
+          <h2 className="font-semibold text-gray-800 mb-3">フォーメーション</h2>
+          <FormationField players={formationPlayers} readOnly />
         </div>
       )}
 
