@@ -1,19 +1,13 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import RankingsClient from './RankingsClient'
+import { getCurrentMember } from '@/lib/auth'
 
 export default async function RankingsPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-
-  const { data: memberRow } = await supabase
-    .from('members')
-    .select('team_id')
-    .eq('id', user.id)
-    .single()
+  const memberRow = await getCurrentMember()
   if (!memberRow) redirect('/login')
 
+  const supabase = await createClient()
   // チームが実際に使っているタグを取得（カスタムタグ含む）
   const { data: tagRows } = await supabase
     .from('matches')

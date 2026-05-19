@@ -4,23 +4,17 @@ import Link from 'next/link'
 import { TAG_COLOR } from '@/lib/matchTags'
 import FormationField from '@/components/FormationField'
 import FormationEditor from '@/components/FormationEditor'
+import { getCurrentMember } from '@/lib/auth'
 
 type Props = { params: Promise<{ id: string }> }
 
 export default async function MatchDetailPage({ params }: Props) {
   const { id } = await params
-  const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-
-  const { data: member } = await supabase
-    .from('members')
-    .select('team_id, role')
-    .eq('id', user.id)
-    .single()
-
+  const member = await getCurrentMember()
   if (!member) redirect('/login')
+
+  const supabase = await createClient()
 
   const { data: match } = await supabase
     .from('matches')

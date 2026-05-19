@@ -1,20 +1,13 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import AdminMembersClient from './AdminMembersClient'
+import { getCurrentMember } from '@/lib/auth'
 
 export default async function AdminMembersPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-
-  const { data: me } = await supabase
-    .from('members')
-    .select('team_id, role')
-    .eq('id', user.id)
-    .single()
-
+  const me = await getCurrentMember()
   if (!me || me.role !== 'admin') redirect('/dashboard')
 
+  const supabase = await createClient()
   const { data: members } = await supabase
     .from('members')
     .select('id, name, number, position, role, birth_date, preferred_foot')

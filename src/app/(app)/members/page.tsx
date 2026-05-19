@@ -1,20 +1,13 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { getCurrentMember } from '@/lib/auth'
 
 export default async function MembersPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-
-  const { data: me } = await supabase
-    .from('members')
-    .select('team_id')
-    .eq('id', user.id)
-    .single()
-
+  const me = await getCurrentMember()
   if (!me) redirect('/login')
 
+  const supabase = await createClient()
   const { data: members } = await supabase
     .from('members')
     .select('id, name, number, position, role')

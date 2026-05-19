@@ -2,23 +2,17 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import MemberStats from './MemberStats'
+import { getCurrentMember } from '@/lib/auth'
 
 type Props = { params: Promise<{ id: string }> }
 
 export default async function MemberDetailPage({ params }: Props) {
   const { id } = await params
-  const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-
-  const { data: me } = await supabase
-    .from('members')
-    .select('team_id')
-    .eq('id', user.id)
-    .single()
-
+  const me = await getCurrentMember()
   if (!me) redirect('/login')
+
+  const supabase = await createClient()
 
   const { data: member } = await supabase
     .from('members')

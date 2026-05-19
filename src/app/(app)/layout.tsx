@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { getCurrentMember } from '@/lib/auth'
 import Sidebar from '@/components/Sidebar'
 
 export default async function DashboardLayout({
@@ -7,19 +7,11 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const member = await getCurrentMember()
+  if (!member) redirect('/login')
 
-  if (!user) redirect('/login')
-
-  const { data: member } = await supabase
-    .from('members')
-    .select('role, teams(name)')
-    .eq('id', user.id)
-    .single()
-
-  const teamName = (member?.teams as unknown as { name: string } | null)?.name ?? ''
-  const isAdmin = member?.role === 'admin'
+  const teamName = member.teams?.name ?? ''
+  const isAdmin = member.role === 'admin'
 
   return (
     <div className="flex min-h-screen bg-gray-50">

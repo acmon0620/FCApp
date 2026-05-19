@@ -2,20 +2,13 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { TAG_COLOR } from '@/lib/matchTags'
+import { getCurrentMember } from '@/lib/auth'
 
 export default async function MatchesPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-
-  const { data: member } = await supabase
-    .from('members')
-    .select('team_id, role')
-    .eq('id', user.id)
-    .single()
-
+  const member = await getCurrentMember()
   if (!member) redirect('/login')
 
+  const supabase = await createClient()
   const { data: matches } = await supabase
     .from('matches')
     .select('*')
