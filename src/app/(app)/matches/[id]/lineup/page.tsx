@@ -308,7 +308,7 @@ export default function LineupPage({ params }: { params: Promise<{ id: string }>
               <FormationField
                 players={starters.map(s => {
                   const member = members.find(m => m.id === s.memberId)
-                  return { id: s.memberId, number: member?.number ?? null, x: s.fieldX, y: s.fieldY }
+                  return { id: s.memberId, number: member?.number ?? null, name: member?.name ?? '', x: s.fieldX, y: s.fieldY }
                 })}
                 onMove={handleFieldMove}
               />

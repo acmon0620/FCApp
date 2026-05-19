@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { TAG_COLOR } from '@/lib/matchTags'
 import FormationField from '@/components/FormationField'
+import FormationEditor from '@/components/FormationEditor'
 
 type Props = { params: Promise<{ id: string }> }
 
@@ -49,7 +50,7 @@ export default async function MatchDetailPage({ params }: Props) {
     .filter(l => l.field_x != null && l.field_y != null)
     .map(l => {
       const m = l.members as { name: string; number: number | null } | null
-      return { id: l.id, number: m?.number ?? null, x: l.field_x as number, y: l.field_y as number }
+      return { id: l.id, number: m?.number ?? null, name: m?.name ?? '', x: l.field_x as number, y: l.field_y as number }
     })
 
   const eventIcon: Record<string, string> = {
@@ -118,7 +119,10 @@ export default async function MatchDetailPage({ params }: Props) {
       {formationPlayers.length > 0 && (
         <div className="bg-white rounded-xl p-5 shadow-sm">
           <h2 className="font-semibold text-gray-800 mb-3">フォーメーション</h2>
-          <FormationField players={formationPlayers} readOnly />
+          {isAdmin
+            ? <FormationEditor initialPlayers={formationPlayers} />
+            : <FormationField players={formationPlayers} readOnly />
+          }
         </div>
       )}
 
