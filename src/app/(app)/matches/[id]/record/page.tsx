@@ -191,7 +191,7 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
     }
   }
 
-  if (!match) return <div className="text-gray-500">読み込み中...</div>
+  if (!match) return <div className="text-gray-500 dark:text-gray-400">読み込み中...</div>
 
   const onField = lineups.filter(l => l.end_minute == null)
   const notOnField = members.filter(m => !onField.some(l => l.member_id === m.id))
@@ -202,8 +202,8 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
       {/* ヘッダー */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">試合記録</h1>
-          <p className="text-gray-500 text-sm">vs {match.opponent} · {match.date}</p>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">試合記録</h1>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">vs {match.opponent} · {match.date}</p>
         </div>
         <div className="flex gap-2">
           {match.status === 'scheduled' && (
@@ -217,7 +217,7 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
             </button>
           )}
           {match.status === 'finished' && (
-            <button onClick={() => router.push(`/matches/${id}`)} className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50">
+            <button onClick={() => router.push(`/matches/${id}`)} className="border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800">
               詳細を見る
             </button>
           )}
@@ -225,33 +225,33 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
       </div>
 
       {/* スコア */}
-      <div className="bg-white rounded-xl p-5 shadow-sm">
+      <div className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="text-center flex-1">
-            <p className="text-xs text-gray-500 mb-1">自チーム</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">自チーム</p>
             <p className="text-4xl font-bold">{match.score_us}</p>
           </div>
           <div className="flex flex-col items-center gap-2 px-4">
-            <p className="text-gray-300 text-2xl font-light">-</p>
+            <p className="text-gray-300 dark:text-gray-600 text-2xl font-light">-</p>
             <div className="flex items-center gap-1">
-              <label className="text-xs text-gray-500">現在</label>
+              <label className="text-xs text-gray-500 dark:text-gray-400">現在</label>
               <input
                 type="number"
                 value={minute}
                 onChange={e => setMinute(Number(e.target.value))}
-                className="w-12 border border-gray-200 rounded px-1 py-0.5 text-sm text-center"
+                className="w-12 border border-gray-200 dark:border-gray-600 rounded px-1 py-0.5 text-sm text-center dark:bg-gray-800 dark:text-gray-100"
                 min={0}
               />
-              <span className="text-xs text-gray-500">分</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">分</span>
             </div>
           </div>
           <div className="text-center flex-1">
-            <p className="text-xs text-gray-500 mb-1">相手</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">相手</p>
             <p className="text-4xl font-bold">{match.score_them}</p>
             <div className="flex gap-1 mt-1 justify-center">
               <button
                 onClick={undoOpponentGoal}
-                className="text-xs bg-gray-100 px-2 py-0.5 rounded hover:bg-gray-200"
+                className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
               >
                 -
               </button>
@@ -267,45 +267,45 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
 
         {/* 相手得点フォーム */}
         {showOpponentForm && (
-          <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-3 space-y-2">
-            <p className="text-sm font-medium text-red-800">相手の得点を記録</p>
+          <div className="mt-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 space-y-2">
+            <p className="text-sm font-medium text-red-800 dark:text-red-300">相手の得点を記録</p>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="text-xs text-gray-500 block mb-0.5">得点者 背番号</label>
+                <label className="text-xs text-gray-500 dark:text-gray-400 block mb-0.5">得点者 背番号</label>
                 <input
                   type="text"
                   value={opponentScorer}
                   onChange={e => setOpponentScorer(e.target.value)}
                   placeholder="例：10"
-                  className="w-full border border-gray-200 rounded px-2 py-1.5 text-sm"
+                  className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 text-sm dark:bg-gray-800 dark:text-gray-100"
                 />
               </div>
               <div>
-                <label className="text-xs text-gray-500 block mb-0.5">アシスト 背番号</label>
+                <label className="text-xs text-gray-500 dark:text-gray-400 block mb-0.5">アシスト 背番号</label>
                 <input
                   type="text"
                   value={opponentAssist}
                   onChange={e => setOpponentAssist(e.target.value)}
                   placeholder="例：7"
-                  className="w-full border border-gray-200 rounded px-2 py-1.5 text-sm"
+                  className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 text-sm dark:bg-gray-800 dark:text-gray-100"
                 />
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <label className="text-xs text-gray-500">時間</label>
+              <label className="text-xs text-gray-500 dark:text-gray-400">時間</label>
               <input
                 type="number"
                 value={opponentMinute}
                 onChange={e => setOpponentMinute(Number(e.target.value))}
-                className="w-16 border border-gray-200 rounded px-2 py-1 text-sm"
+                className="w-16 border border-gray-200 dark:border-gray-600 rounded px-2 py-1 text-sm dark:bg-gray-800 dark:text-gray-100"
                 min={0}
               />
-              <span className="text-xs text-gray-500">分</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">分</span>
             </div>
             <div className="flex gap-2">
               <button
                 onClick={() => setShowOpponentForm(false)}
-                className="flex-1 border border-gray-300 text-gray-600 py-1.5 rounded text-sm"
+                className="flex-1 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 py-1.5 rounded text-sm"
               >
                 キャンセル
               </button>
@@ -321,24 +321,24 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
       </div>
 
       {/* フィールド上のメンバー */}
-      <div className="bg-white rounded-xl p-5 shadow-sm">
+      <div className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold text-gray-800">フィールド上のメンバー（{onField.length}人）</h2>
+          <h2 className="font-semibold text-gray-800 dark:text-gray-100">フィールド上のメンバー（{onField.length}人）</h2>
           {match.status === 'scheduled' && onField.length < 11 && (
             <button
               onClick={() => { setAddMinute(0); setShowAddForm(true) }}
-              className="text-sm text-green-600 hover:underline"
+              className="text-sm text-green-600 dark:text-green-400 hover:underline"
             >
               + 追加
             </button>
           )}
           {match.status === 'scheduled' && onField.length >= 11 && (
-            <span className="text-xs text-green-600 font-medium">先発11人</span>
+            <span className="text-xs text-green-600 dark:text-green-400 font-medium">先発11人</span>
           )}
           {(match.status === 'in_progress' || match.status === 'finished') && (
             <button
               onClick={() => { setSubMinute(minute); setShowSubForm(true) }}
-              className="text-sm text-green-600 hover:underline font-medium"
+              className="text-sm text-green-600 dark:text-green-400 hover:underline font-medium"
             >
               交代を追加
             </button>
@@ -347,11 +347,11 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
 
         {/* 追加フォーム（試合前） */}
         {showAddForm && (
-          <div className="bg-gray-50 rounded-lg p-3 mb-3 space-y-2">
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 mb-3 space-y-2">
             <select
               value={addMember}
               onChange={e => setAddMember(e.target.value)}
-              className="w-full border border-gray-200 rounded px-2 py-1.5 text-sm"
+              className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 text-sm dark:bg-gray-800 dark:text-gray-100"
             >
               <option value="">メンバーを選択</option>
               {notOnField.map(m => (
@@ -363,21 +363,21 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
               value={addPosition}
               onChange={e => setAddPosition(e.target.value)}
               placeholder="ポジション（例：FW）"
-              className="w-full border border-gray-200 rounded px-2 py-1.5 text-sm"
+              className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 text-sm dark:bg-gray-800 dark:text-gray-100"
             />
             <div className="flex items-center gap-2">
-              <label className="text-xs text-gray-500">出場開始</label>
+              <label className="text-xs text-gray-500 dark:text-gray-400">出場開始</label>
               <input
                 type="number"
                 value={addMinute}
                 onChange={e => setAddMinute(Number(e.target.value))}
-                className="w-16 border border-gray-200 rounded px-2 py-1 text-sm"
+                className="w-16 border border-gray-200 dark:border-gray-600 rounded px-2 py-1 text-sm dark:bg-gray-800 dark:text-gray-100"
                 min={0}
               />
-              <span className="text-xs text-gray-500">分</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">分</span>
             </div>
             <div className="flex gap-2">
-              <button onClick={() => setShowAddForm(false)} className="flex-1 border border-gray-300 text-gray-600 py-1.5 rounded text-sm">キャンセル</button>
+              <button onClick={() => setShowAddForm(false)} className="flex-1 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 py-1.5 rounded text-sm">キャンセル</button>
               <button onClick={addLineup} disabled={!addMember} className="flex-1 bg-green-600 text-white py-1.5 rounded text-sm disabled:opacity-50">追加</button>
             </div>
           </div>
@@ -385,10 +385,10 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
 
         {/* 交代フォーム（試合中） */}
         {showSubForm && (
-          <div className="bg-gray-50 rounded-lg p-3 mb-3 space-y-2">
-            <p className="text-xs font-medium text-gray-700">選手交代</p>
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 mb-3 space-y-2">
+            <p className="text-xs font-medium text-gray-700 dark:text-gray-300">選手交代</p>
             <div>
-              <label className="text-xs text-gray-500 block mb-0.5">OUT（外れる選手）</label>
+              <label className="text-xs text-gray-500 dark:text-gray-400 block mb-0.5">OUT（外れる選手）</label>
               <select
                 value={subOut}
                 onChange={e => {
@@ -396,7 +396,7 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
                   const outL = onField.find(l => l.member_id === e.target.value)
                   if (outL?.position) setSubPosition(outL.position)
                 }}
-                className="w-full border border-gray-200 rounded px-2 py-1.5 text-sm"
+                className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 text-sm dark:bg-gray-800 dark:text-gray-100"
               >
                 <option value="">選択してください</option>
                 {onField.map(l => {
@@ -411,11 +411,11 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-0.5">IN（入る選手）</label>
+              <label className="text-xs text-gray-500 dark:text-gray-400 block mb-0.5">IN（入る選手）</label>
               <select
                 value={subIn}
                 onChange={e => setSubIn(e.target.value)}
-                className="w-full border border-gray-200 rounded px-2 py-1.5 text-sm"
+                className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 text-sm dark:bg-gray-800 dark:text-gray-100"
               >
                 <option value="">選択してください</option>
                 {notOnField.map(m => (
@@ -428,21 +428,21 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
               value={subPosition}
               onChange={e => setSubPosition(e.target.value)}
               placeholder="ポジション（省略可）"
-              className="w-full border border-gray-200 rounded px-2 py-1.5 text-sm"
+              className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 text-sm dark:bg-gray-800 dark:text-gray-100"
             />
             <div className="flex items-center gap-2">
-              <label className="text-xs text-gray-500">交代時間</label>
+              <label className="text-xs text-gray-500 dark:text-gray-400">交代時間</label>
               <input
                 type="number"
                 value={subMinute}
                 onChange={e => setSubMinute(Number(e.target.value))}
-                className="w-16 border border-gray-200 rounded px-2 py-1 text-sm"
+                className="w-16 border border-gray-200 dark:border-gray-600 rounded px-2 py-1 text-sm dark:bg-gray-800 dark:text-gray-100"
                 min={0}
               />
-              <span className="text-xs text-gray-500">分</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">分</span>
             </div>
             <div className="flex gap-2">
-              <button onClick={() => setShowSubForm(false)} className="flex-1 border border-gray-300 text-gray-600 py-1.5 rounded text-sm">キャンセル</button>
+              <button onClick={() => setShowSubForm(false)} className="flex-1 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 py-1.5 rounded text-sm">キャンセル</button>
               <button
                 onClick={addSubstitution}
                 disabled={!subOut || !subIn}
@@ -460,40 +460,40 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
               const m = members.find(m => m.id === l.member_id)
               return (
                 <li key={l.id} className="text-sm py-1 flex items-center gap-1">
-                  {m?.number != null && <span className="text-gray-400">#{m.number}</span>}
+                  {m?.number != null && <span className="text-gray-400 dark:text-gray-500">#{m.number}</span>}
                   <span>{m?.name}</span>
-                  {l.position && <span className="text-gray-400">({l.position})</span>}
-                  <span className="text-gray-400 text-xs ml-1">{l.start_minute}分〜</span>
+                  {l.position && <span className="text-gray-400 dark:text-gray-500">({l.position})</span>}
+                  <span className="text-gray-400 dark:text-gray-500 text-xs ml-1">{l.start_minute}分〜</span>
                 </li>
               )
             })}
           </ul>
         ) : (
-          <p className="text-gray-400 text-sm">メンバーが登録されていません</p>
+          <p className="text-gray-400 dark:text-gray-500 text-sm">メンバーが登録されていません</p>
         )}
       </div>
 
       {/* イベント（自チーム） */}
-      <div className="bg-white rounded-xl p-5 shadow-sm">
+      <div className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold text-gray-800">イベント</h2>
+          <h2 className="font-semibold text-gray-800 dark:text-gray-100">イベント</h2>
           <button
             onClick={() => { setShowEventForm(true); setEventMinute(minute) }}
-            className="text-sm text-green-600 hover:underline"
+            className="text-sm text-green-600 dark:text-green-400 hover:underline"
           >
             + 記録
           </button>
         </div>
 
         {showEventForm && (
-          <div className="bg-gray-50 rounded-lg p-3 mb-3 space-y-2">
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 mb-3 space-y-2">
             <div className="flex gap-2">
               {(['goal', 'yellow_card', 'red_card'] as const).map(t => (
                 <button
                   key={t}
                   onClick={() => setEventType(t)}
                   className={`flex-1 py-1.5 rounded text-sm border ${
-                    eventType === t ? 'border-green-600 bg-green-50 text-green-700' : 'border-gray-200 text-gray-600'
+                    eventType === t ? 'border-green-600 bg-green-50 text-green-700' : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400'
                   }`}
                 >
                   {EVENT_ICON[t]} {t === 'goal' ? '得点' : t === 'yellow_card' ? '警告' : '退場'}
@@ -503,7 +503,7 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
             <select
               value={eventMember}
               onChange={e => setEventMember(e.target.value)}
-              className="w-full border border-gray-200 rounded px-2 py-1.5 text-sm"
+              className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 text-sm dark:bg-gray-800 dark:text-gray-100"
             >
               <option value="">選手を選択</option>
               {members.map(m => (
@@ -514,7 +514,7 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
               <select
                 value={assistMember}
                 onChange={e => setAssistMember(e.target.value)}
-                className="w-full border border-gray-200 rounded px-2 py-1.5 text-sm"
+                className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 text-sm dark:bg-gray-800 dark:text-gray-100"
               >
                 <option value="">アシスト選手（なければスキップ）</option>
                 {members.filter(m => m.id !== eventMember).map(m => (
@@ -523,18 +523,18 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
               </select>
             )}
             <div className="flex items-center gap-2">
-              <label className="text-xs text-gray-500">時間</label>
+              <label className="text-xs text-gray-500 dark:text-gray-400">時間</label>
               <input
                 type="number"
                 value={eventMinute}
                 onChange={e => setEventMinute(Number(e.target.value))}
-                className="w-16 border border-gray-200 rounded px-2 py-1 text-sm"
+                className="w-16 border border-gray-200 dark:border-gray-600 rounded px-2 py-1 text-sm dark:bg-gray-800 dark:text-gray-100"
                 min={0}
               />
-              <span className="text-xs text-gray-500">分</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">分</span>
             </div>
             <div className="flex gap-2">
-              <button onClick={() => setShowEventForm(false)} className="flex-1 border border-gray-300 text-gray-600 py-1.5 rounded text-sm">キャンセル</button>
+              <button onClick={() => setShowEventForm(false)} className="flex-1 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 py-1.5 rounded text-sm">キャンセル</button>
               <button onClick={addEvent} disabled={!eventMember} className="flex-1 bg-green-600 text-white py-1.5 rounded text-sm disabled:opacity-50">記録</button>
             </div>
           </div>
@@ -549,23 +549,23 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
               return (
                 <li key={ev.id} className="flex items-center gap-2 text-sm py-0.5">
                   <span>{EVENT_ICON[ev.type] ?? '•'}</span>
-                  <span className="text-gray-400 w-8 flex-shrink-0">{ev.minute}&apos;</span>
+                  <span className="text-gray-400 dark:text-gray-500 w-8 flex-shrink-0">{ev.minute}&apos;</span>
                   {isOpponent ? (
                     <span className="text-red-600">
                       相手{ev.opponent_scorer ? ` #${ev.opponent_scorer}` : ''}
                       {ev.opponent_assist && (
-                        <span className="text-gray-400">（アシスト: #{ev.opponent_assist}）</span>
+                        <span className="text-gray-400 dark:text-gray-500">（アシスト: #{ev.opponent_assist}）</span>
                       )}
                     </span>
                   ) : (
                     <span>
                       {m?.name}
-                      {a && <span className="text-gray-400">（アシスト: {a.name}）</span>}
+                      {a && <span className="text-gray-400 dark:text-gray-500">（アシスト: {a.name}）</span>}
                     </span>
                   )}
                   <button
                     onClick={() => deleteEvent(ev)}
-                    className="ml-auto text-gray-300 hover:text-red-400 text-lg leading-none flex-shrink-0"
+                    className="ml-auto text-gray-300 dark:text-gray-600 hover:text-red-400 text-lg leading-none flex-shrink-0"
                     title="削除"
                   >
                     ×
@@ -575,7 +575,7 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
             })}
           </ul>
         ) : (
-          <p className="text-gray-400 text-sm">イベント記録がありません</p>
+          <p className="text-gray-400 dark:text-gray-500 text-sm">イベント記録がありません</p>
         )}
       </div>
     </div>

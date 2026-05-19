@@ -65,17 +65,17 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="bg-white p-8 rounded-xl shadow-sm w-full max-w-md">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
+      <div className="bg-white dark:bg-gray-900 p-8 rounded-xl shadow-sm w-full max-w-md">
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">⚽ サッカーチーム管理</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">⚽ サッカーチーム管理</h1>
         </div>
 
-        <div className="flex rounded-lg border border-gray-200 mb-6 overflow-hidden">
+        <div className="flex rounded-lg border border-gray-200 dark:border-gray-700 mb-6 overflow-hidden">
           <button
             onClick={() => { setTab('admin'); setError('') }}
             className={`flex-1 py-2 text-sm font-medium transition-colors ${
-              tab === 'admin' ? 'bg-green-600 text-white' : 'text-gray-500 hover:bg-gray-50'
+              tab === 'admin' ? 'bg-green-600 text-white' : 'text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800'
             }`}
           >
             管理者ログイン
@@ -83,7 +83,7 @@ export default function LoginPage() {
           <button
             onClick={() => { setTab('team'); setError('') }}
             className={`flex-1 py-2 text-sm font-medium transition-colors ${
-              tab === 'team' ? 'bg-green-600 text-white' : 'text-gray-500 hover:bg-gray-50'
+              tab === 'team' ? 'bg-green-600 text-white' : 'text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800'
             }`}
           >
             チームメンバーログイン
@@ -93,23 +93,23 @@ export default function LoginPage() {
         {tab === 'admin' ? (
           <form onSubmit={handleAdminLogin} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">メールアドレス</label>
               <input
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-800 dark:text-gray-100"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">パスワード</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">パスワード</label>
               <input
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-800 dark:text-gray-100"
               />
             </div>
             {error && <p className="text-red-500 text-sm">{error}</p>}
@@ -124,24 +124,24 @@ export default function LoginPage() {
         ) : (
           <form onSubmit={handleTeamLogin} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">チーム名</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">チーム名</label>
               <input
                 type="text"
                 value={teamName}
                 onChange={e => setTeamName(e.target.value)}
                 required
                 placeholder="例：FCトウキョウ"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-800 dark:text-gray-100"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">チームパスワード</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">チームパスワード</label>
               <input
                 type="password"
                 value={teamPassword}
                 onChange={e => setTeamPassword(e.target.value)}
                 required
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-800 dark:text-gray-100"
               />
             </div>
             {error && <p className="text-red-500 text-sm">{error}</p>}
@@ -155,9 +155,9 @@ export default function LoginPage() {
           </form>
         )}
 
-        <p className="text-center text-sm text-gray-500 mt-6">
+        <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
           チームアカウントをお持ちでない方は{' '}
-          <Link href="/register" className="text-green-600 hover:underline font-medium">
+          <Link href="/register" className="text-green-600 dark:text-green-400 hover:underline font-medium">
             新規登録
           </Link>
         </p>

@@ -56,46 +56,46 @@ export default function NewMatchPage() {
 
   return (
     <div className="max-w-md">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">試合を追加</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">試合を追加</h1>
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-xl p-6 shadow-sm space-y-4">
+      <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-900 rounded-xl p-6 shadow-sm space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">対戦相手</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">対戦相手</label>
           <input
             type="text"
             value={opponent}
             onChange={e => setOpponent(e.target.value)}
             required
             placeholder="例：FCライバル"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-800 dark:text-gray-100"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">試合日</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">試合日</label>
           <input
             type="date"
             value={date}
             onChange={e => setDate(e.target.value)}
             required
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-800 dark:text-gray-100"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">種別</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">種別</label>
           <input
             type="text"
             value={tag}
             onChange={e => setTag(e.target.value)}
             list="tag-suggestions"
             placeholder="例：リーグ戦、練習試合、大会など"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-800 dark:text-gray-100"
           />
           <datalist id="tag-suggestions">
             {MATCH_TAGS.map(t => <option key={t} value={t} />)}
           </datalist>
-          <p className="text-xs text-gray-400 mt-1">自由に入力できます。候補から選ぶことも可能です。</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">自由に入力できます。候補から選ぶことも可能です。</p>
         </div>
 
         {error && <p className="text-red-500 text-sm">{error}</p>}
@@ -104,7 +104,7 @@ export default function NewMatchPage() {
           <button
             type="button"
             onClick={() => router.back()}
-            className="flex-1 border border-gray-300 text-gray-700 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+            className="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
             キャンセル
           </button>

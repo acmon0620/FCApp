@@ -1,11 +1,10 @@
 function Bone({ className }: { className?: string }) {
-  return <div className={`bg-gray-200 rounded animate-pulse ${className ?? ''}`} />
+  return <div className={`bg-gray-200 dark:bg-gray-700 rounded animate-pulse ${className ?? ''}`} />
 }
 
 export default function MatchDetailLoading() {
   return (
     <div className="space-y-6 max-w-2xl">
-      {/* ヘッダー */}
       <div className="flex items-center justify-between">
         <div className="space-y-2">
           <Bone className="h-4 w-20" />
@@ -18,14 +17,12 @@ export default function MatchDetailLoading() {
         </div>
       </div>
 
-      {/* スコア */}
-      <div className="bg-white rounded-xl p-6 shadow-sm text-center space-y-2">
+      <div className="bg-white dark:bg-gray-900 rounded-xl p-6 shadow-sm text-center space-y-2">
         <Bone className="h-12 w-32 mx-auto" />
         <Bone className="h-4 w-24 mx-auto" />
       </div>
 
-      {/* 出場メンバー */}
-      <div className="bg-white rounded-xl p-5 shadow-sm space-y-3">
+      <div className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm space-y-3">
         <Bone className="h-5 w-28" />
         {[0, 1, 2, 3, 4, 5].map(i => (
           <div key={i} className="flex gap-4">
@@ -37,8 +34,7 @@ export default function MatchDetailLoading() {
         ))}
       </div>
 
-      {/* イベント */}
-      <div className="bg-white rounded-xl p-5 shadow-sm space-y-3">
+      <div className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm space-y-3">
         <Bone className="h-5 w-20" />
         {[0, 1, 2, 3].map(i => (
           <div key={i} className="flex items-center gap-3">

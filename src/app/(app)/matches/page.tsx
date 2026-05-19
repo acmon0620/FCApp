@@ -26,13 +26,13 @@ export default async function MatchesPage() {
   const statusColor: Record<string, string> = {
     scheduled: 'bg-blue-100 text-blue-700',
     in_progress: 'bg-yellow-100 text-yellow-700',
-    finished: 'bg-gray-100 text-gray-600',
+    finished: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400',
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">試合一覧</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">試合一覧</h1>
         {isAdmin && (
           <Link
             href="/matches/new"
@@ -49,12 +49,12 @@ export default async function MatchesPage() {
             <Link
               key={m.id}
               href={`/matches/${m.id}`}
-              className="block bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow"
+              className="block bg-white dark:bg-gray-900 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow"
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-semibold text-gray-900">vs {m.opponent}</p>
-                  <p className="text-sm text-gray-500 mt-0.5">{m.date}</p>
+                  <p className="font-semibold text-gray-900 dark:text-white">vs {m.opponent}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{m.date}</p>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap justify-end">
                   {m.tag && (
@@ -63,7 +63,7 @@ export default async function MatchesPage() {
                     </span>
                   )}
                   {m.status === 'finished' && (
-                    <span className="text-lg font-bold text-gray-800">
+                    <span className="text-lg font-bold text-gray-800 dark:text-gray-100">
                       {m.score_us} - {m.score_them}
                     </span>
                   )}
@@ -76,10 +76,10 @@ export default async function MatchesPage() {
           ))}
         </div>
       ) : (
-        <div className="bg-white rounded-xl p-8 shadow-sm text-center">
-          <p className="text-gray-400">試合記録がありません</p>
+        <div className="bg-white dark:bg-gray-900 rounded-xl p-8 shadow-sm text-center">
+          <p className="text-gray-400 dark:text-gray-500">試合記録がありません</p>
           {isAdmin && (
-            <Link href="/matches/new" className="text-green-600 text-sm mt-2 inline-block hover:underline">
+            <Link href="/matches/new" className="text-green-600 dark:text-green-400 text-sm mt-2 inline-block hover:underline">
               最初の試合を追加する
             </Link>
           )}

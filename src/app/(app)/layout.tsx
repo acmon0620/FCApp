@@ -14,7 +14,7 @@ export default async function DashboardLayout({
   const isAdmin = member.role === 'admin'
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-950">
       <Sidebar teamName={teamName} isAdmin={isAdmin} />
       <main className="flex-1 p-6 overflow-auto">
         {children}

@@ -28,29 +28,29 @@ function MemberFormFields({ form, onChange }: { form: MemberForm; onChange: (f: 
   return (
     <div className="grid grid-cols-2 gap-3">
       <div className="col-span-2">
-        <label className="block text-xs text-gray-500 mb-1">名前 *</label>
+        <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">名前 *</label>
         <input type="text" value={form.name} onChange={e => onChange({ ...form, name: e.target.value })} required
-          className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+          className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-800 dark:text-gray-100" />
       </div>
       <div>
-        <label className="block text-xs text-gray-500 mb-1">背番号</label>
+        <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">背番号</label>
         <input type="number" value={form.number} onChange={e => onChange({ ...form, number: e.target.value })} min={1}
-          className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+          className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-800 dark:text-gray-100" />
       </div>
       <div>
-        <label className="block text-xs text-gray-500 mb-1">ポジション</label>
+        <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">ポジション</label>
         <input type="text" value={form.position} onChange={e => onChange({ ...form, position: e.target.value })} placeholder="例：FW"
-          className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+          className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-800 dark:text-gray-100" />
       </div>
       <div>
-        <label className="block text-xs text-gray-500 mb-1">生年月日</label>
+        <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">生年月日</label>
         <input type="date" value={form.birth_date} onChange={e => onChange({ ...form, birth_date: e.target.value })}
-          className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+          className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-800 dark:text-gray-100" />
       </div>
       <div>
-        <label className="block text-xs text-gray-500 mb-1">利き足</label>
+        <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">利き足</label>
         <select value={form.preferred_foot} onChange={e => onChange({ ...form, preferred_foot: e.target.value })}
-          className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+          className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-800 dark:text-gray-100">
           <option value="">選択</option>
           <option value="right">右足</option>
           <option value="left">左足</option>
@@ -227,43 +227,43 @@ export default function AdminMembersClient({ members, teamId }: { members: Membe
       </div>
 
       {showBulkForm && (
-        <form onSubmit={handleBulkAdd} className="bg-white rounded-xl p-5 shadow-sm space-y-3">
-          <h2 className="font-semibold text-gray-800">メンバー一括入力</h2>
+        <form onSubmit={handleBulkAdd} className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm space-y-3">
+          <h2 className="font-semibold text-gray-800 dark:text-gray-100">メンバー一括入力</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b">
-                  <th className="text-left py-2 pr-2 text-xs text-gray-500 font-medium w-8">#</th>
-                  <th className="text-left py-2 pr-2 text-xs text-gray-500 font-medium">名前 *</th>
-                  <th className="text-left py-2 pr-2 text-xs text-gray-500 font-medium w-20">背番号</th>
-                  <th className="text-left py-2 pr-2 text-xs text-gray-500 font-medium w-24">ポジション</th>
-                  <th className="text-left py-2 pr-2 text-xs text-gray-500 font-medium w-36">生年月日</th>
-                  <th className="text-left py-2 text-xs text-gray-500 font-medium w-24">利き足</th>
+                <tr className="border-b dark:border-gray-700">
+                  <th className="text-left py-2 pr-2 text-xs text-gray-500 dark:text-gray-400 font-medium w-8">#</th>
+                  <th className="text-left py-2 pr-2 text-xs text-gray-500 dark:text-gray-400 font-medium">名前 *</th>
+                  <th className="text-left py-2 pr-2 text-xs text-gray-500 dark:text-gray-400 font-medium w-20">背番号</th>
+                  <th className="text-left py-2 pr-2 text-xs text-gray-500 dark:text-gray-400 font-medium w-24">ポジション</th>
+                  <th className="text-left py-2 pr-2 text-xs text-gray-500 dark:text-gray-400 font-medium w-36">生年月日</th>
+                  <th className="text-left py-2 text-xs text-gray-500 dark:text-gray-400 font-medium w-24">利き足</th>
                 </tr>
               </thead>
               <tbody>
                 {bulkRows.map((row, i) => (
-                  <tr key={row.id} className="border-b last:border-0">
-                    <td className="py-1 pr-2 text-gray-400 text-xs">{i + 1}</td>
+                  <tr key={row.id} className="border-b dark:border-gray-700 last:border-0">
+                    <td className="py-1 pr-2 text-gray-400 dark:text-gray-500 text-xs">{i + 1}</td>
                     <td className="py-1 pr-2">
                       <input value={row.name} onChange={e => setBulkRows(rows => rows.map((r, j) => j === i ? { ...r, name: e.target.value } : r))}
-                        className="w-full border border-gray-200 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-green-500" />
+                        className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-green-500 dark:bg-gray-800 dark:text-gray-100" />
                     </td>
                     <td className="py-1 pr-2">
                       <input type="number" value={row.number} min={1} onChange={e => setBulkRows(rows => rows.map((r, j) => j === i ? { ...r, number: e.target.value } : r))}
-                        className="w-full border border-gray-200 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-green-500" />
+                        className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-green-500 dark:bg-gray-800 dark:text-gray-100" />
                     </td>
                     <td className="py-1 pr-2">
                       <input value={row.position} placeholder="FW" onChange={e => setBulkRows(rows => rows.map((r, j) => j === i ? { ...r, position: e.target.value } : r))}
-                        className="w-full border border-gray-200 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-green-500" />
+                        className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-green-500 dark:bg-gray-800 dark:text-gray-100" />
                     </td>
                     <td className="py-1 pr-2">
                       <input type="date" value={row.birth_date} onChange={e => setBulkRows(rows => rows.map((r, j) => j === i ? { ...r, birth_date: e.target.value } : r))}
-                        className="w-full border border-gray-200 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-green-500" />
+                        className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-green-500 dark:bg-gray-800 dark:text-gray-100" />
                     </td>
                     <td className="py-1">
                       <select value={row.preferred_foot} onChange={e => setBulkRows(rows => rows.map((r, j) => j === i ? { ...r, preferred_foot: e.target.value } : r))}
-                        className="w-full border border-gray-200 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-green-500">
+                        className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-green-500 dark:bg-gray-800 dark:text-gray-100">
                         <option value="">-</option>
                         <option value="right">右</option>
                         <option value="left">左</option>
@@ -276,11 +276,11 @@ export default function AdminMembersClient({ members, teamId }: { members: Membe
             </table>
           </div>
           <button type="button" onClick={() => setBulkRows(rows => [...rows, newBulkRow()])}
-            className="text-sm text-green-600 hover:underline">+ 行を追加</button>
+            className="text-sm text-green-600 dark:text-green-400 hover:underline">+ 行を追加</button>
           {bulkError && <p className="text-red-500 text-sm">{bulkError}</p>}
           <div className="flex gap-2">
             <button type="button" onClick={() => setShowBulkForm(false)}
-              className="flex-1 border border-gray-300 text-gray-600 py-2 rounded-lg text-sm hover:bg-gray-50">
+              className="flex-1 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 py-2 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-800">
               キャンセル
             </button>
             <button type="submit" disabled={bulkLoading}
@@ -292,21 +292,21 @@ export default function AdminMembersClient({ members, teamId }: { members: Membe
       )}
 
       {showAddForm && (
-        <form onSubmit={handleAdd} className="bg-white rounded-xl p-5 shadow-sm space-y-3">
-          <h2 className="font-semibold text-gray-800">新しいメンバー</h2>
+        <form onSubmit={handleAdd} className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm space-y-3">
+          <h2 className="font-semibold text-gray-800 dark:text-gray-100">新しいメンバー</h2>
           <MemberFormFields form={addForm} onChange={setAddForm} />
           <div>
-            <label className="block text-xs text-gray-500 mb-1">
+            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
               メールアドレス
-              <span className="ml-1 text-gray-400 font-normal">（任意・アプリにログインさせる場合に入力）</span>
+              <span className="ml-1 text-gray-400 dark:text-gray-500 font-normal">（任意・アプリにログインさせる場合に入力）</span>
             </label>
             <input type="email" value={email} onChange={e => setEmail(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+              className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-800 dark:text-gray-100" />
           </div>
           {addError && <p className="text-red-500 text-sm">{addError}</p>}
           <div className="flex gap-2">
             <button type="button" onClick={() => setShowAddForm(false)}
-              className="flex-1 border border-gray-300 text-gray-600 py-2 rounded-lg text-sm hover:bg-gray-50">
+              className="flex-1 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 py-2 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-800">
               キャンセル
             </button>
             <button type="submit" disabled={addLoading}
@@ -318,13 +318,13 @@ export default function AdminMembersClient({ members, teamId }: { members: Membe
       )}
 
       {editingId && (
-        <form onSubmit={handleSaveEdit} className="bg-white rounded-xl p-5 shadow-sm space-y-3 border-2 border-green-400">
-          <h2 className="font-semibold text-gray-800">メンバー情報を編集</h2>
+        <form onSubmit={handleSaveEdit} className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm space-y-3 border-2 border-green-400">
+          <h2 className="font-semibold text-gray-800 dark:text-gray-100">メンバー情報を編集</h2>
           <MemberFormFields form={editForm} onChange={setEditForm} />
           {editError && <p className="text-red-500 text-sm">{editError}</p>}
           <div className="flex gap-2">
             <button type="button" onClick={() => setEditingId(null)}
-              className="flex-1 border border-gray-300 text-gray-600 py-2 rounded-lg text-sm hover:bg-gray-50">
+              className="flex-1 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 py-2 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-800">
               キャンセル
             </button>
             <button type="submit" disabled={editLoading}
@@ -335,31 +335,31 @@ export default function AdminMembersClient({ members, teamId }: { members: Membe
         </form>
       )}
 
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b">
+          <thead className="bg-gray-50 dark:bg-gray-800 border-b dark:border-gray-700">
             <tr>
-              <th className="text-left px-4 py-3 text-gray-600 font-medium">名前</th>
-              <th className="text-left px-4 py-3 text-gray-600 font-medium">番号</th>
-              <th className="text-left px-4 py-3 text-gray-600 font-medium">ポジション</th>
-              <th className="text-left px-4 py-3 text-gray-600 font-medium">ロール</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-400 font-medium">名前</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-400 font-medium">番号</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-400 font-medium">ポジション</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-400 font-medium">ロール</th>
               <th className="px-4 py-3"></th>
             </tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody className="divide-y dark:divide-gray-700">
             {members.map(m => (
-              <tr key={m.id} className={editingId === m.id ? 'bg-green-50' : ''}>
-                <td className="px-4 py-3 font-medium text-gray-900">{m.name}</td>
-                <td className="px-4 py-3 text-gray-500">{m.number ?? '-'}</td>
-                <td className="px-4 py-3 text-gray-500">{m.position ?? '-'}</td>
+              <tr key={m.id} className={editingId === m.id ? 'bg-green-50 dark:bg-green-900/20' : ''}>
+                <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{m.name}</td>
+                <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{m.number ?? '-'}</td>
+                <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{m.position ?? '-'}</td>
                 <td className="px-4 py-3">
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${m.role === 'admin' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${m.role === 'admin' ? 'bg-green-100 text-green-700' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'}`}>
                     {m.role === 'admin' ? '管理者' : 'メンバー'}
                   </span>
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex gap-2 justify-end">
-                    <button onClick={() => startEdit(m)} className="text-xs text-green-600 hover:underline">編集</button>
+                    <button onClick={() => startEdit(m)} className="text-xs text-green-600 dark:text-green-400 hover:underline">編集</button>
                     <button onClick={() => toggleRole(m)} className="text-xs text-blue-500 hover:underline">
                       {m.role === 'admin' ? 'メンバーに変更' : '管理者に変更'}
                     </button>

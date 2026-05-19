@@ -100,19 +100,19 @@ export default function LineupClient({ id, matchOpponent, members, initialStarte
   return (
     <div className="space-y-5 max-w-2xl">
       <div>
-        <Link href={`/matches/${id}`} className="text-sm text-gray-500 hover:text-gray-700">
+        <Link href={`/matches/${id}`} className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
           ← 試合詳細
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900 mt-1">スターティングメンバー</h1>
-        <p className="text-gray-500 text-sm">vs {matchOpponent}</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">スターティングメンバー</h1>
+        <p className="text-gray-500 dark:text-gray-400 text-sm">vs {matchOpponent}</p>
       </div>
 
       {/* タブ */}
-      <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+      <div className="flex rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
         <button
           onClick={() => setTab('starter')}
           className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
-            tab === 'starter' ? 'bg-green-600 text-white' : 'text-gray-500 hover:bg-gray-50'
+            tab === 'starter' ? 'bg-green-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
           }`}
         >
           先発　{starters.length}/{STARTER_LIMIT}
@@ -120,7 +120,7 @@ export default function LineupClient({ id, matchOpponent, members, initialStarte
         <button
           onClick={() => setTab('sub')}
           className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
-            tab === 'sub' ? 'bg-green-600 text-white' : 'text-gray-500 hover:bg-gray-50'
+            tab === 'sub' ? 'bg-green-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
           }`}
         >
           サブ　{subMembers.length}人
@@ -128,7 +128,7 @@ export default function LineupClient({ id, matchOpponent, members, initialStarte
         <button
           onClick={() => setTab('formation')}
           className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
-            tab === 'formation' ? 'bg-green-600 text-white' : 'text-gray-500 hover:bg-gray-50'
+            tab === 'formation' ? 'bg-green-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
           }`}
         >
           ⚽ 配置
@@ -139,15 +139,15 @@ export default function LineupClient({ id, matchOpponent, members, initialStarte
       {tab === 'starter' && (
         <div className="space-y-2">
           {remaining > 0 && (
-            <p className="text-sm text-gray-400">
-              あと <span className="font-medium text-gray-600">{remaining}人</span> 選択できます（サブタブから追加）
+            <p className="text-sm text-gray-400 dark:text-gray-500">
+              あと <span className="font-medium text-gray-600 dark:text-gray-400">{remaining}人</span> 選択できます（サブタブから追加）
             </p>
           )}
           {remaining === 0 && (
             <p className="text-sm text-green-600 font-medium">先発メンバーが揃いました</p>
           )}
           {starters.length === 0 && (
-            <div className="bg-white rounded-xl p-8 shadow-sm text-center text-gray-400 text-sm">
+            <div className="bg-white dark:bg-gray-900 rounded-xl p-8 shadow-sm text-center text-gray-400 dark:text-gray-500 text-sm">
               サブタブからメンバーを追加してください
             </div>
           )}
@@ -155,11 +155,11 @@ export default function LineupClient({ id, matchOpponent, members, initialStarte
             const member = members.find(m => m.id === starter.memberId)
             if (!member) return null
             return (
-              <div key={starter.memberId} className="bg-white rounded-xl shadow-sm border-2 border-green-500">
+              <div key={starter.memberId} className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border-2 border-green-500">
                 <div className="flex items-center gap-3 p-4">
                   <div className="flex-1">
-                    <span className="font-medium text-gray-900">
-                      {member.number != null && <span className="text-gray-400 mr-1">#{member.number}</span>}
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      {member.number != null && <span className="text-gray-400 dark:text-gray-500 mr-1">#{member.number}</span>}
                       {member.name}
                     </span>
                   </div>
@@ -179,7 +179,7 @@ export default function LineupClient({ id, matchOpponent, members, initialStarte
                         className={`px-2 py-0.5 rounded text-xs font-medium border transition-colors ${
                           starter.position === pos
                             ? 'bg-green-600 text-white border-green-600'
-                            : 'bg-white text-gray-600 border-gray-200 hover:border-green-400'
+                            : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:border-green-400'
                         }`}
                       >
                         {pos}
@@ -191,7 +191,7 @@ export default function LineupClient({ id, matchOpponent, members, initialStarte
                     value={starter.position}
                     onChange={e => updatePosition(starter.memberId, e.target.value)}
                     placeholder="ポジションを入力"
-                    className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-800 dark:text-gray-100"
                   />
                 </div>
               </div>
@@ -204,15 +204,15 @@ export default function LineupClient({ id, matchOpponent, members, initialStarte
       {tab === 'sub' && (
         <div className="space-y-2">
           {remaining > 0 && (
-            <p className="text-sm text-gray-400">
-              タップして先発に追加（あと <span className="font-medium text-gray-600">{remaining}人</span> 追加可）
+            <p className="text-sm text-gray-400 dark:text-gray-500">
+              タップして先発に追加（あと <span className="font-medium text-gray-600 dark:text-gray-400">{remaining}人</span> 追加可）
             </p>
           )}
           {remaining === 0 && (
-            <p className="text-sm text-gray-400">先発が11人に達しました。先発タブで外してから追加できます</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">先発が11人に達しました。先発タブで外してから追加できます</p>
           )}
           {subMembers.length === 0 && (
-            <div className="bg-white rounded-xl p-8 shadow-sm text-center text-gray-400 text-sm">
+            <div className="bg-white dark:bg-gray-900 rounded-xl p-8 shadow-sm text-center text-gray-400 dark:text-gray-500 text-sm">
               全員が先発に設定されています
             </div>
           )}
@@ -221,18 +221,18 @@ export default function LineupClient({ id, matchOpponent, members, initialStarte
               key={member.id}
               onClick={() => addToStarters(member)}
               disabled={remaining === 0}
-              className={`w-full bg-white rounded-xl shadow-sm border-2 border-transparent p-4 text-left flex items-center gap-3 transition-colors ${
-                remaining > 0 ? 'hover:border-green-300 hover:bg-green-50' : 'opacity-50 cursor-not-allowed'
+              className={`w-full bg-white dark:bg-gray-900 rounded-xl shadow-sm border-2 border-transparent p-4 text-left flex items-center gap-3 transition-colors ${
+                remaining > 0 ? 'hover:border-green-300 dark:hover:border-green-700 hover:bg-green-50 dark:hover:bg-green-900/20' : 'opacity-50 cursor-not-allowed'
               }`}
             >
               <div className="flex-1">
-                <span className="font-medium text-gray-900">
-                  {member.number != null && <span className="text-gray-400 mr-1">#{member.number}</span>}
+                <span className="font-medium text-gray-900 dark:text-white">
+                  {member.number != null && <span className="text-gray-400 dark:text-gray-500 mr-1">#{member.number}</span>}
                   {member.name}
                 </span>
-                {member.position && <span className="text-xs text-gray-400 ml-2">{member.position}</span>}
+                {member.position && <span className="text-xs text-gray-400 dark:text-gray-500 ml-2">{member.position}</span>}
               </div>
-              {remaining > 0 && <span className="text-xs text-green-600 font-medium">先発に追加</span>}
+              {remaining > 0 && <span className="text-xs text-green-600 dark:text-green-400 font-medium">先発に追加</span>}
             </button>
           ))}
         </div>
@@ -242,12 +242,12 @@ export default function LineupClient({ id, matchOpponent, members, initialStarte
       {tab === 'formation' && (
         <div className="space-y-3">
           {starters.length === 0 ? (
-            <div className="bg-white rounded-xl p-8 shadow-sm text-center text-gray-400 text-sm">
+            <div className="bg-white dark:bg-gray-900 rounded-xl p-8 shadow-sm text-center text-gray-400 dark:text-gray-500 text-sm">
               先発メンバーを追加するとフィールドに表示されます
             </div>
           ) : (
             <>
-              <p className="text-xs text-gray-500">選手アイコンをドラッグして配置を調整できます</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">選手アイコンをドラッグして配置を調整できます</p>
               <FormationField
                 players={starters.map(s => {
                   const member = members.find(m => m.id === s.memberId)
@@ -265,7 +265,7 @@ export default function LineupClient({ id, matchOpponent, members, initialStarte
         <button
           type="button"
           onClick={() => router.push(`/matches/${id}`)}
-          className="flex-1 border border-gray-300 text-gray-700 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+          className="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
         >
           キャンセル
         </button>

@@ -84,23 +84,23 @@ export default function RankingsClient({ teamId, availableTags }: { teamId: stri
   return (
     <div className="space-y-4 max-w-xl">
       {/* フィルターパネル */}
-      <div className="bg-white rounded-xl p-4 shadow-sm space-y-4">
+      <div className="bg-white dark:bg-gray-900 rounded-xl p-4 shadow-sm space-y-4">
         {/* タグフィルター */}
         <div>
-          <p className="text-xs font-medium text-gray-500 mb-2">種別で絞り込み</p>
+          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">種別で絞り込み</p>
           <div className="flex flex-wrap gap-1.5">
             <button
               onClick={() => setSelectedTag(null)}
               className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
                 selectedTag === null
                   ? 'bg-green-600 text-white border-green-600'
-                  : 'border-gray-200 text-gray-600 hover:border-gray-400'
+                  : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-400'
               }`}
             >
               すべて
             </button>
             {availableTags.length === 0 ? (
-              <span className="text-xs text-gray-400">タグ付きの試合がありません</span>
+              <span className="text-xs text-gray-400 dark:text-gray-500">タグ付きの試合がありません</span>
             ) : (
               availableTags.map(t => (
                 <button
@@ -109,7 +109,7 @@ export default function RankingsClient({ teamId, availableTags }: { teamId: stri
                   className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
                     selectedTag === t
                       ? `${TAG_COLOR[t] ?? 'bg-green-100 text-green-700'} border-transparent`
-                      : 'border-gray-200 text-gray-600 hover:border-gray-400'
+                      : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-400'
                   }`}
                 >
                   {t}
@@ -121,25 +121,25 @@ export default function RankingsClient({ teamId, availableTags }: { teamId: stri
 
         {/* 期間フィルター */}
         <div>
-          <p className="text-xs font-medium text-gray-500 mb-2">期間で絞り込み</p>
+          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">期間で絞り込み</p>
           <div className="flex items-center gap-2">
             <input
               type="date"
               value={dateFrom}
               onChange={e => setDateFrom(e.target.value)}
-              className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="flex-1 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-800 dark:text-gray-100"
             />
-            <span className="text-gray-400 text-sm flex-shrink-0">〜</span>
+            <span className="text-gray-400 dark:text-gray-500 text-sm flex-shrink-0">〜</span>
             <input
               type="date"
               value={dateTo}
               onChange={e => setDateTo(e.target.value)}
-              className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="flex-1 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-800 dark:text-gray-100"
             />
             {(dateFrom || dateTo) && (
               <button
                 onClick={() => { setDateFrom(''); setDateTo('') }}
-                className="text-xs text-gray-400 hover:text-red-400 flex-shrink-0"
+                className="text-xs text-gray-400 dark:text-gray-500 hover:text-red-400 flex-shrink-0"
               >
                 クリア
               </button>
@@ -160,7 +160,7 @@ export default function RankingsClient({ teamId, availableTags }: { teamId: stri
             </p>
             <button
               onClick={() => { setSelectedTag(null); setDateFrom(''); setDateTo('') }}
-              className="text-xs text-gray-400 hover:text-red-400"
+              className="text-xs text-gray-400 dark:text-gray-500 hover:text-red-400"
             >
               すべてクリア
             </button>
@@ -169,13 +169,13 @@ export default function RankingsClient({ teamId, availableTags }: { teamId: stri
       </div>
 
       {/* カテゴリタブ */}
-      <div className="flex rounded-xl overflow-x-auto border border-gray-200 bg-white shadow-sm">
+      <div className="flex rounded-xl overflow-x-auto border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm">
         {TABS.map(t => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
             className={`flex-shrink-0 px-3 py-2.5 text-xs font-medium transition-colors flex flex-col items-center gap-0.5 min-w-[60px] ${
-              tab === t.key ? 'bg-green-600 text-white' : 'text-gray-500 hover:bg-gray-50'
+              tab === t.key ? 'bg-green-600 text-white' : 'text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800'
             }`}
           >
             <span className="text-base">{t.emoji}</span>
@@ -185,19 +185,19 @@ export default function RankingsClient({ teamId, availableTags }: { teamId: stri
       </div>
 
       {/* ランキングリスト */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center text-gray-400 text-sm">読み込み中...</div>
+          <div className="p-8 text-center text-gray-400 dark:text-gray-500 text-sm">読み込み中...</div>
         ) : entries.length === 0 ? (
-          <div className="p-8 text-center text-gray-400 text-sm">記録がありません</div>
+          <div className="p-8 text-center text-gray-400 dark:text-gray-500 text-sm">記録がありません</div>
         ) : (
-          <ul>
+          <ul className="divide-y dark:divide-gray-700">
             {entries.map((entry, i) => {
               const isTop3 = i < 3
               return (
                 <li
                   key={entry.memberId}
-                  className={`flex items-center gap-4 px-5 py-3.5 border-b last:border-0 ${
+                  className={`flex items-center gap-4 px-5 py-3.5 border-b last:border-0 border-gray-200 dark:border-gray-700 ${
                     i === 0 && !isNegative ? 'bg-yellow-50' :
                     i === 0 &&  isNegative ? 'bg-red-50'    : ''
                   }`}
@@ -205,22 +205,22 @@ export default function RankingsClient({ teamId, availableTags }: { teamId: stri
                   <div className="w-8 text-center flex-shrink-0">
                     {isTop3
                       ? <span className="text-xl">{topIcons[i]}</span>
-                      : <span className="text-sm font-bold text-gray-400">{i + 1}</span>
+                      : <span className="text-sm font-bold text-gray-400 dark:text-gray-500">{i + 1}</span>
                     }
                   </div>
                   <div className="flex-1 min-w-0">
-                    <span className="font-medium text-gray-900">
+                    <span className="font-medium text-gray-900 dark:text-white">
                       {entry.number != null && (
-                        <span className="text-gray-400 text-sm mr-1">#{entry.number}</span>
+                        <span className="text-gray-400 dark:text-gray-500 text-sm mr-1">#{entry.number}</span>
                       )}
                       {entry.name}
                     </span>
                   </div>
                   <div className="flex items-baseline gap-1 flex-shrink-0">
-                    <span className={`text-2xl font-bold ${i === 0 ? 'text-green-600' : 'text-gray-700'}`}>
+                    <span className={`text-2xl font-bold ${i === 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-700 dark:text-gray-300'}`}>
                       {entry.count}
                     </span>
-                    <span className="text-xs text-gray-400">{tabMeta.unit}</span>
+                    <span className="text-xs text-gray-400 dark:text-gray-500">{tabMeta.unit}</span>
                   </div>
                 </li>
               )

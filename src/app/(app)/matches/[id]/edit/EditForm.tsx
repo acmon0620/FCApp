@@ -56,38 +56,38 @@ export default function EditForm({ id, initialOpponent, initialDate, initialTag 
 
   return (
     <>
-      <form onSubmit={handleSave} className="bg-white rounded-xl p-6 shadow-sm space-y-4">
+      <form onSubmit={handleSave} className="bg-white dark:bg-gray-900 rounded-xl p-6 shadow-sm space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">対戦相手</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">対戦相手</label>
           <input
             type="text"
             value={opponent}
             onChange={e => setOpponent(e.target.value)}
             required
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-800 dark:text-gray-100"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">試合日</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">試合日</label>
           <input
             type="date"
             value={date}
             onChange={e => setDate(e.target.value)}
             required
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-800 dark:text-gray-100"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">種別</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">種別</label>
           <input
             type="text"
             value={tag}
             onChange={e => setTag(e.target.value)}
             list="tag-suggestions"
             placeholder="例：リーグ戦、練習試合、大会など"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-800 dark:text-gray-100"
           />
           <datalist id="tag-suggestions">
             {MATCH_TAGS.map(t => <option key={t} value={t} />)}
@@ -100,7 +100,7 @@ export default function EditForm({ id, initialOpponent, initialDate, initialTag 
           <button
             type="button"
             onClick={() => router.back()}
-            className="flex-1 border border-gray-300 text-gray-700 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+            className="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
             キャンセル
           </button>

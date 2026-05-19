@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useTheme } from 'next-themes'
 import { createClient } from '@/lib/supabase/client'
 import {
   BarChart,
@@ -20,6 +21,8 @@ type ChartData = {
 
 export default function MemberStats({ memberId, teamId }: { memberId: string; teamId: string }) {
   const [data, setData] = useState<ChartData[]>([])
+  const { resolvedTheme } = useTheme()
+  const isDark = resolvedTheme === 'dark'
 
   useEffect(() => {
     async function load() {
@@ -67,14 +70,19 @@ export default function MemberStats({ memberId, teamId }: { memberId: string; te
 
   if (data.length === 0) return null
 
+  const axisColor = isDark ? '#9ca3af' : '#6b7280'
+  const tooltipStyle = isDark
+    ? { backgroundColor: '#1f2937', border: '1px solid #374151', color: '#f3f4f6' }
+    : {}
+
   return (
-    <div className="bg-white rounded-xl p-5 shadow-sm">
-      <h2 className="font-semibold text-gray-800 mb-4">試合別得点・アシスト</h2>
+    <div className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm">
+      <h2 className="font-semibold text-gray-800 dark:text-gray-100 mb-4">試合別得点・アシスト</h2>
       <ResponsiveContainer width="100%" height={220}>
         <BarChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
-          <XAxis dataKey="opponent" tick={{ fontSize: 11 }} />
-          <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-          <Tooltip />
+          <XAxis dataKey="opponent" tick={{ fontSize: 11, fill: axisColor }} />
+          <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: axisColor }} />
+          <Tooltip contentStyle={tooltipStyle} />
           <Legend />
           <Bar dataKey="得点" fill="#16a34a" radius={[4, 4, 0, 0]} />
           <Bar dataKey="アシスト" fill="#86efac" radius={[4, 4, 0, 0]} />

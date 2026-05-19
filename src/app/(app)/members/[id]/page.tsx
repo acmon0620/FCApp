@@ -70,21 +70,21 @@ export default async function MemberDetailPage({ params }: Props) {
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
-        <Link href="/members" className="text-sm text-gray-500 hover:text-gray-700">← メンバー一覧</Link>
-        <h1 className="text-2xl font-bold text-gray-900 mt-1">{member.name}</h1>
+        <Link href="/members" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700">← メンバー一覧</Link>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{member.name}</h1>
       </div>
 
-      <div className="bg-white rounded-xl p-5 shadow-sm">
-        <h2 className="font-semibold text-gray-800 mb-3">プロフィール</h2>
+      <div className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm">
+        <h2 className="font-semibold text-gray-800 dark:text-gray-100 mb-3">プロフィール</h2>
         <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-          <dt className="text-gray-500">背番号</dt>
-          <dd className="text-gray-900">#{member.number ?? '-'}</dd>
-          <dt className="text-gray-500">ポジション</dt>
-          <dd className="text-gray-900">{member.position ?? '-'}</dd>
-          <dt className="text-gray-500">利き足</dt>
-          <dd className="text-gray-900">{member.preferred_foot ? footLabel[member.preferred_foot] : '-'}</dd>
-          <dt className="text-gray-500">生年月日</dt>
-          <dd className="text-gray-900">{member.birth_date ?? '-'}{age != null ? ` (${age}歳)` : ''}</dd>
+          <dt className="text-gray-500 dark:text-gray-400">背番号</dt>
+          <dd className="text-gray-900 dark:text-white">#{member.number ?? '-'}</dd>
+          <dt className="text-gray-500 dark:text-gray-400">ポジション</dt>
+          <dd className="text-gray-900 dark:text-white">{member.position ?? '-'}</dd>
+          <dt className="text-gray-500 dark:text-gray-400">利き足</dt>
+          <dd className="text-gray-900 dark:text-white">{member.preferred_foot ? footLabel[member.preferred_foot] : '-'}</dd>
+          <dt className="text-gray-500 dark:text-gray-400">生年月日</dt>
+          <dd className="text-gray-900 dark:text-white">{member.birth_date ?? '-'}{age != null ? ` (${age}歳)` : ''}</dd>
         </dl>
       </div>
 
@@ -97,9 +97,9 @@ export default async function MemberDetailPage({ params }: Props) {
           { label: '警告', value: yellowCards, unit: '枚' },
           { label: '退場', value: redCards, unit: '枚' },
         ].map(s => (
-          <div key={s.label} className="bg-white rounded-xl p-4 shadow-sm text-center">
-            <p className="text-2xl font-bold text-gray-900">{s.value}</p>
-            <p className="text-xs text-gray-500 mt-0.5">{s.label}</p>
+          <div key={s.label} className="bg-white dark:bg-gray-900 rounded-xl p-4 shadow-sm text-center">
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{s.value}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{s.label}</p>
           </div>
         ))}
       </div>

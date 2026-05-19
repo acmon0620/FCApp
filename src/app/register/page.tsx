@@ -20,7 +20,6 @@ export default function RegisterPage() {
 
     const supabase = createClient()
 
-    // 管理者アカウント作成
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -34,10 +33,8 @@ export default function RegisterPage() {
 
     const adminId = authData.user.id
 
-    // 管理者セッションを一度クリアしてから共有アカウントを作成
     await supabase.auth.signOut()
 
-    // チーム共有アカウント作成（メンバーログイン用）
     const sharedEmail = `team-${crypto.randomUUID()}@member.internal`
     const { data: sharedData, error: sharedError } = await supabase.auth.signUp({
       email: sharedEmail,
@@ -69,95 +66,63 @@ export default function RegisterPage() {
     window.location.href = '/login?registered=1'
   }
 
+  const inputClass = "w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-800 dark:text-gray-100"
+  const labelClass = "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="bg-white p-8 rounded-xl shadow-sm w-full max-w-md">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
+      <div className="bg-white dark:bg-gray-900 p-8 rounded-xl shadow-sm w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">⚽ サッカーチーム管理</h1>
-          <p className="text-gray-500 mt-2">チーム新規登録</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">⚽ サッカーチーム管理</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-2">チーム新規登録</p>
         </div>
 
         <form onSubmit={handleRegister} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">チーム名</label>
-            <input
-              type="text"
-              value={teamName}
-              onChange={e => setTeamName(e.target.value)}
-              required
-              placeholder="例：FCトウキョウ"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-            />
+            <label className={labelClass}>チーム名</label>
+            <input type="text" value={teamName} onChange={e => setTeamName(e.target.value)} required
+              placeholder="例：FCトウキョウ" className={inputClass} />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">管理者名</label>
-            <input
-              type="text"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              required
-              placeholder="例：山田 太郎"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-            />
+            <label className={labelClass}>管理者名</label>
+            <input type="text" value={name} onChange={e => setName(e.target.value)} required
+              placeholder="例：山田 太郎" className={inputClass} />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">管理者メールアドレス</label>
-            <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              required
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-            />
+            <label className={labelClass}>管理者メールアドレス</label>
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} required className={inputClass} />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">管理者パスワード</label>
-            <input
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              required
-              minLength={6}
-              placeholder="6文字以上"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-            />
+            <label className={labelClass}>管理者パスワード</label>
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required
+              minLength={6} placeholder="6文字以上" className={inputClass} />
           </div>
 
-          <hr className="border-gray-200" />
+          <hr className="border-gray-200 dark:border-gray-700" />
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className={labelClass}>
               チームパスワード
-              <span className="ml-1 text-xs text-gray-400 font-normal">（メンバーがログインする際に使用）</span>
+              <span className="ml-1 text-xs text-gray-400 dark:text-gray-500 font-normal">（メンバーがログインする際に使用）</span>
             </label>
-            <input
-              type="password"
-              value={teamPassword}
-              onChange={e => setTeamPassword(e.target.value)}
-              required
-              minLength={6}
-              placeholder="6文字以上"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-            />
+            <input type="password" value={teamPassword} onChange={e => setTeamPassword(e.target.value)} required
+              minLength={6} placeholder="6文字以上" className={inputClass} />
           </div>
 
           {error && <p className="text-red-500 text-sm">{error}</p>}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-green-600 text-white py-2 rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 transition-colors"
-          >
+          <button type="submit" disabled={loading}
+            className="w-full bg-green-600 text-white py-2 rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 transition-colors">
             {loading ? '登録中...' : 'チームを登録する'}
           </button>
         </form>
 
-        <p className="text-center text-sm text-gray-500 mt-6">
+        <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
           すでにアカウントをお持ちの方は{' '}
-          <Link href="/login" className="text-green-600 hover:underline font-medium">
+          <Link href="/login" className="text-green-600 dark:text-green-400 hover:underline font-medium">
             ログイン
           </Link>
         </p>

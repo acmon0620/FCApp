@@ -1,5 +1,5 @@
 function Bone({ className }: { className?: string }) {
-  return <div className={`bg-gray-200 rounded animate-pulse ${className ?? ''}`} />
+  return <div className={`bg-gray-200 dark:bg-gray-700 rounded animate-pulse ${className ?? ''}`} />
 }
 
 export default function MatchesLoading() {
@@ -12,7 +12,7 @@ export default function MatchesLoading() {
 
       <div className="space-y-3">
         {[0, 1, 2, 3, 4, 5].map(i => (
-          <div key={i} className="bg-white rounded-xl p-4 shadow-sm">
+          <div key={i} className="bg-white dark:bg-gray-900 rounded-xl p-4 shadow-sm">
             <div className="flex items-center justify-between">
               <div className="space-y-2">
                 <Bone className="h-5 w-36" />

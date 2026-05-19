@@ -37,26 +37,26 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">ダッシュボード</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">ダッシュボード</h1>
 
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white rounded-xl p-4 shadow-sm text-center">
+        <div className="bg-white dark:bg-gray-900 rounded-xl p-4 shadow-sm text-center">
           <p className="text-3xl font-bold text-green-600">{wins}</p>
-          <p className="text-sm text-gray-500 mt-1">勝利</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">勝利</p>
         </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm text-center">
+        <div className="bg-white dark:bg-gray-900 rounded-xl p-4 shadow-sm text-center">
           <p className="text-3xl font-bold text-yellow-500">{draws}</p>
-          <p className="text-sm text-gray-500 mt-1">引き分け</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">引き分け</p>
         </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm text-center">
+        <div className="bg-white dark:bg-gray-900 rounded-xl p-4 shadow-sm text-center">
           <p className="text-3xl font-bold text-red-500">{losses}</p>
-          <p className="text-sm text-gray-500 mt-1">敗北</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">敗北</p>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl p-5 shadow-sm">
-          <h2 className="font-semibold text-gray-800 mb-3">直近の試合結果</h2>
+        <div className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm">
+          <h2 className="font-semibold text-gray-800 dark:text-gray-100 mb-3">直近の試合結果</h2>
           {recentMatches && recentMatches.length > 0 ? (
             <ul className="space-y-2">
               {recentMatches.map(m => {
@@ -64,7 +64,7 @@ export default async function DashboardPage() {
                 const resultColor = result === '勝' ? 'text-green-600' : result === '分' ? 'text-yellow-500' : 'text-red-500'
                 return (
                   <li key={m.id} className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">{m.date} vs {m.opponent}</span>
+                    <span className="text-gray-600 dark:text-gray-400">{m.date} vs {m.opponent}</span>
                     <span className={`font-bold ${resultColor}`}>
                       {m.score_us} - {m.score_them} ({result})
                     </span>
@@ -73,14 +73,14 @@ export default async function DashboardPage() {
               })}
             </ul>
           ) : (
-            <p className="text-gray-400 text-sm">試合記録がありません</p>
+            <p className="text-gray-400 dark:text-gray-500 text-sm">試合記録がありません</p>
           )}
         </div>
 
-        <div className="bg-white rounded-xl p-5 shadow-sm">
+        <div className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-gray-800">得点ランキング TOP3</h2>
-            <Link href="/rankings" className="text-xs text-green-600 hover:underline">
+            <h2 className="font-semibold text-gray-800 dark:text-gray-100">得点ランキング TOP3</h2>
+            <Link href="/rankings" className="text-xs text-green-600 dark:text-green-400 hover:underline">
               全ランキングを見る →
             </Link>
           </div>
@@ -90,7 +90,7 @@ export default async function DashboardPage() {
                 const medals = ['🥇', '🥈', '🥉']
                 return (
                   <li key={r.name} className="flex items-center justify-between text-sm">
-                    <span className="text-gray-700 flex items-center gap-2">
+                    <span className="text-gray-700 dark:text-gray-300 flex items-center gap-2">
                       <span className="text-base">{medals[i]}</span>
                       {r.name}
                     </span>
@@ -100,7 +100,7 @@ export default async function DashboardPage() {
               })}
             </ol>
           ) : (
-            <p className="text-gray-400 text-sm">得点記録がありません</p>
+            <p className="text-gray-400 dark:text-gray-500 text-sm">得点記録がありません</p>
           )}
         </div>
       </div>
