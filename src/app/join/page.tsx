@@ -36,7 +36,7 @@ export default function JoinPage() {
     })
 
     if (rpcError) {
-      setError('チームへの参加に失敗しました。招待コードが正しいか確認してください。')
+      setError('チームへの参加に失敗しました: ' + rpcError.message)
       setLoading(false)
       return
     }
