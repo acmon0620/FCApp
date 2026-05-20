@@ -2,14 +2,10 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 export default function JoinPage() {
-  const searchParams = useSearchParams()
-  const prefillCode = searchParams.get('code') ?? ''
-
-  const [teamId, setTeamId] = useState(prefillCode)
+  const [teamId, setTeamId] = useState('')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')

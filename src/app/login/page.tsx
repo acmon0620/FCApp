@@ -1,15 +1,12 @@
 'use client'
 
+import { Suspense } from 'react'
 import { useState } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import LoginBanner from './LoginBanner'
 
 export default function LoginPage() {
-  const searchParams = useSearchParams()
-  const justJoined = searchParams.get('joined') === '1'
-  const justRegistered = searchParams.get('registered') === '1'
-
   const [tab, setTab] = useState<'admin' | 'team'>('admin')
 
   const [email, setEmail] = useState('')
@@ -76,11 +73,9 @@ export default function LoginPage() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">⚽ サッカーチーム管理</h1>
         </div>
 
-        {(justJoined || justRegistered) && (
-          <div className="mb-4 px-4 py-3 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg text-sm text-green-700 dark:text-green-300">
-            {justJoined ? 'チームへの参加が完了しました。ログインしてください。' : 'チームの登録が完了しました。ログインしてください。'}
-          </div>
-        )}
+        <Suspense fallback={null}>
+          <LoginBanner />
+        </Suspense>
 
         <div className="flex rounded-lg border border-gray-200 dark:border-gray-700 mb-6 overflow-hidden">
           <button
