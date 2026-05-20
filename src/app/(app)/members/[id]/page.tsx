@@ -88,7 +88,7 @@ export default async function MemberDetailPage({ params }: Props) {
         </dl>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         {[
           { label: '出場試合', value: appearances, unit: '試合' },
           { label: '出場時間', value: totalMinutes, unit: '分' },

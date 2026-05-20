@@ -31,7 +31,7 @@ export default function Sidebar({ teamName, isAdmin }: Props) {
   }
 
   return (
-    <aside className="w-56 min-h-screen bg-gray-900 text-white flex flex-col">
+    <aside className="hidden md:flex flex-col w-56 min-h-screen bg-gray-900 text-white">
       <div className="p-4 border-b border-gray-700">
         <p className="text-xs text-gray-400">チーム</p>
         <p className="font-bold text-sm truncate">{teamName}</p>

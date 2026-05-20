@@ -54,7 +54,7 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm">
           <h2 className="font-semibold text-gray-800 dark:text-gray-100 mb-3">直近の試合結果</h2>
           {recentMatches && recentMatches.length > 0 ? (

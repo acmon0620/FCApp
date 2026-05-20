@@ -4,9 +4,14 @@
 
 ## 技術スタック
 
-- **フレームワーク**: Next.js 15 (App Router)
-- **データベース / 認証**: Supabase (PostgreSQL + Auth + RLS)
-- **スタイリング**: Tailwind CSS
+| カテゴリ | 技術 |
+|----------|------|
+| フレームワーク | Next.js 16 (App Router) |
+| 言語 | TypeScript |
+| データベース / 認証 | Supabase (PostgreSQL + Auth + RLS) |
+| スタイリング | Tailwind CSS v4 (CSS-first config) |
+| テーマ管理 | next-themes |
+| チャート | Recharts |
 
 ---
 
@@ -72,6 +77,63 @@
 ### メンバー管理（管理者のみ）
 - チームメンバーの一覧表示
 - 背番号・ロールの編集
+- メンバー個人ページで試合別得点・アシストのバーチャートを表示（Recharts）
+
+### ダークモード
+- ライト / ダーク / システム設定の3モードをサイドバーのボタンで切り替え
+- 選択はlocalStorageに保存され、ページをまたいで維持される
+- チャート（Recharts）の軸色・ツールチップ背景もダークモードに対応
+
+---
+
+## アーキテクチャ
+
+### Server / Client Component の役割分担
+
+| ファイル | 種別 | 役割 |
+|----------|------|------|
+| `(app)/layout.tsx` | Server | 認証チェック・サイドバー描画 |
+| `matches/[id]/edit/page.tsx` | Server | データ取得・権限チェック |
+| `matches/[id]/edit/EditForm.tsx` | Client | フォーム状態管理・保存/削除操作 |
+| `matches/[id]/lineup/page.tsx` | Server | 試合・メンバー・ラインナップ並列取得 |
+| `matches/[id]/lineup/LineupClient.tsx` | Client | タブ切り替え・ドラッグ・保存操作 |
+| `rankings/page.tsx` | Server | 初期データ取得 |
+| `rankings/RankingsClient.tsx` | Client | タブ・フィルター操作 |
+| `members/[id]/MemberStats.tsx` | Client | Rechartsチャート描画 |
+
+### 認証ヘルパー（`src/lib/auth.ts`）
+
+React `cache()` でラップした `getCurrentMember()` を各サーバーコンポーネントから呼ぶことで、**同一リクエスト内でのSupabase認証クエリを1回に集約**しています。レイアウトとページの両方から呼んでも実際のDBアクセスは1度だけです。
+
+```typescript
+export const getCurrentMember = cache(async (): Promise<CurrentMember | null> => {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+  const { data } = await supabase
+    .from('members')
+    .select('team_id, role, teams(id, name)')
+    .eq('id', user.id)
+    .single()
+  return (data as unknown as CurrentMember) ?? null
+})
+```
+
+### スケルトンローダー
+
+各ルートセグメントに `loading.tsx` を配置し、サーバーサイドのデータ取得中にスケルトンUIを即時表示します。Next.js が自動的に Suspense バウンダリとして扱います。
+
+対象ページ：`dashboard` / `matches` / `matches/[id]` / `matches/[id]/edit` / `matches/[id]/lineup` / `rankings` / `members`
+
+### ダークモードの実装
+
+Tailwind CSS v4 は `tailwind.config.ts` を使わず CSS-first で設定します。`globals.css` に以下を追加することでクラスベースのダークモードを有効化しています：
+
+```css
+@custom-variant dark (&:where(.dark, .dark *));
+```
+
+`next-themes` の `ThemeProvider`（`attribute="class"`）が `<html>` タグに `.dark` クラスを付与することでTailwindのダークバリアントが動作します。
 
 ---
 
@@ -88,6 +150,43 @@
 ### PostgreSQL関数（SECURITY DEFINER）
 - `get_top_scorers(p_team_id, p_limit)` — 得点ランキング取得（ダッシュボード用）
 - `get_team_rankings(p_team_id, p_tag, p_date_from, p_date_to)` — 全カテゴリランキング取得（フィルター対応）
+- `register_team(p_team_name, p_member_name, p_member_id, p_shared_member_id, p_shared_member_email)` — チーム登録（管理者・共有アカウントを一括作成）
+
+---
+
+## ディレクトリ構成
+
+```
+src/
+├── app/
+│   ├── (app)/                  # 認証必須ルートグループ
+│   │   ├── layout.tsx          # サイドバー・認証ガード
+│   │   ├── dashboard/
+│   │   ├── matches/
+│   │   │   ├── [id]/
+│   │   │   │   ├── edit/       # EditForm.tsx (Client)
+│   │   │   │   ├── lineup/     # LineupClient.tsx (Client)
+│   │   │   │   └── record/
+│   │   │   └── new/
+│   │   ├── members/
+│   │   │   └── [id]/           # MemberStats.tsx (Client, Recharts)
+│   │   ├── rankings/           # RankingsClient.tsx (Client)
+│   │   └── admin/
+│   ├── login/
+│   ├── register/
+│   ├── globals.css
+│   └── layout.tsx              # ThemeProvider・suppressHydrationWarning
+├── components/
+│   ├── Sidebar.tsx
+│   ├── ThemeProvider.tsx       # next-themes ラッパー
+│   └── ThemeToggle.tsx         # 🌙/☀️ トグルボタン
+└── lib/
+    ├── auth.ts                 # getCurrentMember() with React cache()
+    ├── matchTags.ts
+    └── supabase/
+        ├── client.ts
+        └── server.ts
+```
 
 ---
 

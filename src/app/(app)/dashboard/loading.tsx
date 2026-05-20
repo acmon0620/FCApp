@@ -16,7 +16,7 @@ export default function DashboardLoading() {
         ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm space-y-3">
           <Bone className="h-5 w-32" />
           {[0, 1, 2, 3, 4].map(i => (

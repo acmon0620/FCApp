@@ -2,9 +2,14 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 export default function LoginPage() {
+  const searchParams = useSearchParams()
+  const justJoined = searchParams.get('joined') === '1'
+  const justRegistered = searchParams.get('registered') === '1'
+
   const [tab, setTab] = useState<'admin' | 'team'>('admin')
 
   const [email, setEmail] = useState('')
@@ -71,6 +76,12 @@ export default function LoginPage() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">⚽ サッカーチーム管理</h1>
         </div>
 
+        {(justJoined || justRegistered) && (
+          <div className="mb-4 px-4 py-3 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg text-sm text-green-700 dark:text-green-300">
+            {justJoined ? 'チームへの参加が完了しました。ログインしてください。' : 'チームの登録が完了しました。ログインしてください。'}
+          </div>
+        )}
+
         <div className="flex rounded-lg border border-gray-200 dark:border-gray-700 mb-6 overflow-hidden">
           <button
             onClick={() => { setTab('admin'); setError('') }}
@@ -78,7 +89,7 @@ export default function LoginPage() {
               tab === 'admin' ? 'bg-green-600 text-white' : 'text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800'
             }`}
           >
-            管理者ログイン
+            個人アカウント
           </button>
           <button
             onClick={() => { setTab('team'); setError('') }}
@@ -155,12 +166,20 @@ export default function LoginPage() {
           </form>
         )}
 
-        <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
-          チームアカウントをお持ちでない方は{' '}
-          <Link href="/register" className="text-green-600 dark:text-green-400 hover:underline font-medium">
-            新規登録
-          </Link>
-        </p>
+        <div className="mt-6 space-y-2 text-center text-sm text-gray-500 dark:text-gray-400">
+          <p>
+            招待コードをお持ちの方は{' '}
+            <Link href="/join" className="text-green-600 dark:text-green-400 hover:underline font-medium">
+              チームに参加
+            </Link>
+          </p>
+          <p>
+            新規チーム登録は{' '}
+            <Link href="/register" className="text-green-600 dark:text-green-400 hover:underline font-medium">
+              こちら
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   )

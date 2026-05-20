@@ -62,11 +62,11 @@ export default async function MatchDetailPage({ params }: Props) {
 
   return (
     <div className="space-y-6 max-w-2xl">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
           <Link href="/matches" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">← 試合一覧</Link>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">vs {match.opponent}</h1>
-          <div className="flex items-center gap-2 mt-0.5">
+          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
             <p className="text-gray-500 dark:text-gray-400">{match.date} · {statusLabel[match.status]}</p>
             {match.tag && (
               <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${TAG_COLOR[match.tag] ?? 'bg-gray-100 text-gray-600'}`}>
@@ -76,7 +76,7 @@ export default async function MatchDetailPage({ params }: Props) {
           </div>
         </div>
         {isAdmin && (
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Link
               href={`/matches/${id}/edit`}
               className="border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
