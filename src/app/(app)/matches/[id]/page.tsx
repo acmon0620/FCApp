@@ -33,9 +33,18 @@ export default async function MatchDetailPage({ params }: Props) {
 
   const { data: events } = await supabase
     .from('events')
-    .select('*, members(name), assistMember:assisted_by(name)')
+    .select('*')
     .eq('match_id', id)
     .order('minute')
+
+  const eventMemberIds = [...new Set([
+    ...(events ?? []).map((e: { member_id: string | null }) => e.member_id).filter((x): x is string => x != null),
+    ...(events ?? []).map((e: { assisted_by: string | null }) => e.assisted_by).filter((x): x is string => x != null),
+  ])]
+  const { data: eventMembersData } = eventMemberIds.length > 0
+    ? await supabase.from('members').select('id, name').in('id', eventMemberIds)
+    : { data: [] as { id: string; name: string }[] }
+  const memberNameById = Object.fromEntries((eventMembersData ?? []).map((m: { id: string; name: string }) => [m.id, m.name]))
 
   const isAdmin = member.role === 'admin'
 
@@ -67,7 +76,7 @@ export default async function MatchDetailPage({ params }: Props) {
           <Link href="/matches" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">← 試合一覧</Link>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">vs {match.opponent}</h1>
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-            <p className="text-gray-500 dark:text-gray-400">{match.date} · {statusLabel[match.status]}</p>
+            <p className="text-gray-500 dark:text-gray-400">{match.date} · {statusLabel[match.status]}{match.duration ? ` · ${match.duration}分` : ''}</p>
             {match.tag && (
               <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${TAG_COLOR[match.tag] ?? 'bg-gray-100 text-gray-600'}`}>
                 {match.tag}
@@ -174,10 +183,10 @@ export default async function MatchDetailPage({ params }: Props) {
         <h2 className="font-semibold text-gray-800 dark:text-gray-100 mb-3">イベント</h2>
         {events && events.length > 0 ? (
           <ul className="space-y-2">
-            {events.map(ev => {
+            {events.map((ev: { id: string; type: string; minute: number; member_id: string | null; assisted_by: string | null; opponent_scorer: string | null; opponent_assist: string | null }) => {
               const isOpponent = ev.type === 'opponent_goal'
-              const scorer = !isOpponent ? (ev.members as { name: string } | null) : null
-              const assister = ev.assistMember as { name: string } | null
+              const scorerName = !isOpponent && ev.member_id ? memberNameById[ev.member_id] : null
+              const assisterName = ev.assisted_by ? memberNameById[ev.assisted_by] : null
               return (
                 <li key={ev.id} className="flex items-center gap-3 text-sm">
                   <span className="text-xl">{eventIcon[ev.type] ?? '•'}</span>
@@ -191,9 +200,9 @@ export default async function MatchDetailPage({ params }: Props) {
                     </span>
                   ) : (
                     <>
-                      <span className="font-medium">{scorer?.name}</span>
-                      {assister && (
-                        <span className="text-gray-500 dark:text-gray-400">（アシスト: {assister.name}）</span>
+                      <span className="font-medium">{scorerName}</span>
+                      {assisterName && (
+                        <span className="text-gray-500 dark:text-gray-400">（アシスト: {assisterName}）</span>
                       )}
                     </>
                   )}

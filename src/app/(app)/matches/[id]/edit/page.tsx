@@ -14,7 +14,7 @@ export default async function MatchEditPage({ params }: Props) {
   const supabase = await createClient()
   const { data: match } = await supabase
     .from('matches')
-    .select('opponent, date, tag')
+    .select('opponent, date, tag, duration')
     .eq('id', id)
     .eq('team_id', member.team_id)
     .single()
@@ -29,6 +29,7 @@ export default async function MatchEditPage({ params }: Props) {
         initialOpponent={match.opponent}
         initialDate={match.date}
         initialTag={match.tag ?? ''}
+        initialDuration={match.duration ?? null}
       />
     </div>
   )

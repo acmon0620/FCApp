@@ -10,6 +10,7 @@ export default function NewMatchPage() {
   const [opponent, setOpponent] = useState('')
   const [date, setDate] = useState('')
   const [tag, setTag] = useState('')
+  const [duration, setDuration] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -41,6 +42,7 @@ export default function NewMatchPage() {
         date,
         status: 'scheduled',
         tag: tag || null,
+        duration: duration ? Number(duration) : null,
       })
       .select()
       .single()
@@ -96,6 +98,25 @@ export default function NewMatchPage() {
             {MATCH_TAGS.map(t => <option key={t} value={t} />)}
           </datalist>
           <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">自由に入力できます。候補から選ぶことも可能です。</p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">試合時間（分）</label>
+          <input
+            type="number"
+            value={duration}
+            onChange={e => setDuration(e.target.value)}
+            list="duration-suggestions"
+            placeholder="例：90"
+            min={1}
+            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-800 dark:text-gray-100"
+          />
+          <datalist id="duration-suggestions">
+            <option value="60" />
+            <option value="80" />
+            <option value="90" />
+          </datalist>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">45分ハーフなら 90、前後半30分なら 60 など</p>
         </div>
 
         {error && <p className="text-red-500 text-sm">{error}</p>}

@@ -15,7 +15,7 @@ type Event = {
   opponent_scorer: string | null
   opponent_assist: string | null
 }
-type Match = { id: string; opponent: string; date: string; status: string; score_us: number; score_them: number }
+type Match = { id: string; opponent: string; date: string; status: string; score_us: number; score_them: number; duration: number | null }
 
 const EVENT_ICON: Record<string, string> = {
   goal: '⚽',
@@ -85,7 +85,12 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
       supabase.from('events').select('*').eq('match_id', id).order('minute'),
     ])
 
-    if (matchRes.data) setMatch(matchRes.data)
+    if (matchRes.data) {
+      setMatch(prev => {
+        if (!prev && matchRes.data.duration) setMinute(matchRes.data.duration)
+        return matchRes.data
+      })
+    }
     if (membersRes.data) setMembers(membersRes.data)
     if (lineupsRes.data) setLineups(lineupsRes.data)
     if (eventsRes.data) setEvents(eventsRes.data)
