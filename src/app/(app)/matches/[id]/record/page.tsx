@@ -93,6 +93,7 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
 
   async function startMatch() {
     await supabase.from('matches').update({ status: 'in_progress' }).eq('id', id)
+    await loadData()
   }
 
   async function finishMatch() {
@@ -104,6 +105,7 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
         supabase.from('lineups').update({ end_minute: minute }).eq('id', l.id)
       ),
     ])
+    await loadData()
   }
 
   async function addLineup() {
@@ -117,6 +119,7 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
     setAddMember('')
     setAddPosition('')
     setAddMinute(0)
+    await loadData()
   }
 
   async function addSubstitution() {
@@ -136,6 +139,7 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
     setSubOut('')
     setSubIn('')
     setSubPosition('')
+    await loadData()
   }
 
   async function addEvent() {
@@ -153,6 +157,7 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
     setShowEventForm(false)
     setEventMember('')
     setAssistMember('')
+    await loadData()
   }
 
   async function addOpponentGoal() {
@@ -171,6 +176,7 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
     setShowOpponentForm(false)
     setOpponentScorer('')
     setOpponentAssist('')
+    await loadData()
   }
 
   async function undoOpponentGoal() {
@@ -180,6 +186,7 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
       supabase.from('matches').update({ score_them: newScore }).eq('id', id),
       lastGoal ? supabase.from('events').delete().eq('id', lastGoal.id) : Promise.resolve(),
     ])
+    await loadData()
   }
 
   async function deleteEvent(ev: Event) {
@@ -189,6 +196,7 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
     } else if (ev.type === 'opponent_goal') {
       await supabase.from('matches').update({ score_them: Math.max(0, (match?.score_them ?? 0) - 1) }).eq('id', id)
     }
+    await loadData()
   }
 
   if (!match) return <div className="text-gray-500 dark:text-gray-400">読み込み中...</div>
