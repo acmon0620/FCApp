@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "FC App",
+  title: "FootBoard",
   description: "サッカーチーム管理アプリ",
 };
 
