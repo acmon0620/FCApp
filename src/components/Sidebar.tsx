@@ -1,17 +1,26 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import ThemeToggle from './ThemeToggle'
+import iconSrc from '@/app/icon.png'
 
-const navItems = [
+type NavItem = {
+  href: string
+  label: string
+  icon: string
+  adminOnly?: boolean
+  match?: (p: string) => boolean
+}
+
+const navItems: NavItem[] = [
   { href: '/dashboard', label: 'ダッシュボード', icon: '🏠' },
   { href: '/matches', label: '試合', icon: '⚽' },
   { href: '/members', label: 'メンバー', icon: '👥' },
   { href: '/rankings', label: 'ランキング', icon: '🏆' },
-  { href: '/admin/members', label: 'メンバー管理', icon: '⚙️', adminOnly: true },
-  { href: '/admin/settings', label: 'チーム設定', icon: '🔧', adminOnly: true },
+  { href: '/admin/members', label: '管理', icon: '⚙️', adminOnly: true, match: (p) => p.startsWith('/admin') },
 ]
 
 type Props = {
@@ -33,14 +42,17 @@ export default function Sidebar({ teamName, isAdmin }: Props) {
   return (
     <aside className="hidden md:flex flex-col w-56 min-h-screen bg-gray-900 text-white">
       <div className="p-4 border-b border-gray-700">
-        <p className="text-xs text-gray-400">チーム</p>
-        <p className="font-bold text-sm truncate">{teamName}</p>
+        <div className="flex items-center gap-2">
+          <Image src={iconSrc} alt="FootBoard" width={28} height={28} className="rounded-md" />
+          <span className="font-bold text-base text-white">FootBoard</span>
+        </div>
+        <p className="text-xs text-gray-400 truncate mt-1">{teamName}</p>
       </div>
 
       <nav className="flex-1 p-3 space-y-1">
         {navItems.map(item => {
           if (item.adminOnly && !isAdmin) return null
-          const active = pathname === item.href
+          const active = item.match ? item.match(pathname) : pathname === item.href
           return (
             <Link
               key={item.href}

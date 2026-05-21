@@ -16,10 +16,9 @@ export default async function AdminMembersPage() {
     .order('number', { ascending: true, nullsFirst: false })
 
   return (
-    <div className="space-y-6 max-w-2xl">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">メンバー管理</h1>
-        <span className="text-sm text-gray-500">登録人数：<span className="font-bold text-gray-800">{members?.length ?? 0}</span> 人</span>
+    <div className="space-y-6">
+      <div className="flex justify-end">
+        <span className="text-sm text-gray-500">登録人数：<span className="font-bold text-gray-800 dark:text-gray-200">{members?.length ?? 0}</span> 人</span>
       </div>
       <AdminMembersClient members={members ?? []} teamId={me.team_id} />
     </div>

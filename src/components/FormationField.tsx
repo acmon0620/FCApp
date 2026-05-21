@@ -81,11 +81,11 @@ export default function FormationField({ players, onMove, onMoveEnd, readOnly = 
         />
       </div>
 
-      {/* Player tokens — separate layer so tooltips aren't clipped */}
+      {/* Player tokens */}
       {players.map(p => (
         <div
           key={p.id}
-          className="group absolute"
+          className="absolute flex flex-col items-center gap-0.5"
           style={{
             left: `${p.x * 100}%`,
             top: `${p.y * 100}%`,
@@ -94,19 +94,19 @@ export default function FormationField({ players, onMove, onMoveEnd, readOnly = 
           }}
           onPointerDown={e => handlePlayerDown(e, p.id)}
         >
-          {/* Hover tooltip */}
-          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:block pointer-events-none z-20">
-            <div className="bg-black/75 text-white text-xs rounded px-2 py-0.5 whitespace-nowrap">
-              {p.name}
-            </div>
-          </div>
-
           {/* Jersey number token */}
           <div className="w-9 h-9 rounded-full bg-white shadow-lg flex items-center justify-center border-2 border-green-800">
             <span className="text-xs font-bold text-green-900 leading-none">
               {p.number ?? '?'}
             </span>
           </div>
+          {/* Always-visible name label */}
+          <span
+            className="text-white text-[10px] font-medium whitespace-nowrap leading-none pointer-events-none"
+            style={{ textShadow: '0 1px 2px rgba(0,0,0,0.9), 0 0 4px rgba(0,0,0,0.7)' }}
+          >
+            {p.name}
+          </span>
         </div>
       ))}
     </div>
