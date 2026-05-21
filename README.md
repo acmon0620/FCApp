@@ -1,4 +1,4 @@
-# FC App — サッカーチーム管理アプリ
+# FootBoard — サッカーチーム管理アプリ
 
 サッカーチームの試合記録・メンバー管理・ランキング集計を行うWebアプリです。
 
@@ -18,8 +18,26 @@
 ## 主な機能
 
 ### 認証・チーム管理
-- メールアドレス＋パスワードによるサインアップ / ログイン
-- チーム作成（サインアップ時に自動作成）またはチームコードで既存チームに参加
+
+#### チーム登録
+- `/register` ページから新規チームを作成
+- 登録と同時に管理者アカウントと共有チームアカウントを自動生成（`register_team` RPC）
+- 登録完了後 `/login?registered=1` にリダイレクトし、緑のバナーで完了を通知
+
+#### チームへの参加（メンバー登録）
+- 管理者が「チーム設定」画面でチーム招待コード（チームUUID）を確認・コピー
+- メンバーは `/join` ページで招待コード・名前・メール・パスワードを入力してチームに参加
+- 参加完了後 `/login?joined=1` にリダイレクトし、緑のバナーで完了を通知
+- `join_team` RPC（SECURITY DEFINER）で未認証状態でもメンバー登録を安全に実行
+
+#### ログイン（`/login`）
+2つのタブを切り替えてログイン：
+
+| タブ | 対象 | 方法 |
+|------|------|------|
+| 個人アカウント | 管理者・個人アカウント登録済メンバー | メール＋パスワード |
+| チームメンバーログイン | 共有アカウントのメンバー | チーム名＋チームパスワード |
+
 - ロール管理：`admin`（管理者）/ `member`（一般メンバー）
 
 ### ダッシュボード
@@ -55,6 +73,7 @@
 
 #### 試合詳細
 - スコア表示
+- フォーメーション表示（各トークンの下に常時名前を表示）
 - 出場メンバー一覧：先発バッジ / ポジション / 出場時間（例：0分〜45分）/ 計X分
 - イベント一覧：時系列で得点・アシスト・カード・相手得点を表示
 
@@ -74,15 +93,48 @@
 - **タグフィルター**：種別（リーグ戦のみ等）でランキングを絞り込み
 - **期間フィルター**：開始日〜終了日でランキングを絞り込み
 
-### メンバー管理（管理者のみ）
+### 管理（管理者のみ）
+サイドバー / ボトムナビの「管理」タブから、内部タブで2セクションを切り替え：
+
+#### メンバー管理タブ
 - チームメンバーの一覧表示
 - 背番号・ロールの編集
 - メンバー個人ページで試合別得点・アシストのバーチャートを表示（Recharts）
+
+#### チーム設定タブ
+- チーム名の変更・保存
+- チーム招待コード（UUID）の表示とコピーボタン
 
 ### ダークモード
 - ライト / ダーク / システム設定の3モードをサイドバーのボタンで切り替え
 - 選択はlocalStorageに保存され、ページをまたいで維持される
 - チャート（Recharts）の軸色・ツールチップ背景もダークモードに対応
+
+---
+
+## スマホ対応
+
+### ボトムナビバー（モバイル専用）
+- 画面下部に固定のタブバーを表示（`md:hidden` でデスクトップでは非表示）
+- 管理者には「管理」タブを追加表示（5タブ）、一般メンバーは4タブ
+
+| タブ | 遷移先 |
+|------|--------|
+| ホーム | `/dashboard` |
+| 試合 | `/matches` |
+| メンバー | `/members` |
+| ランキング | `/rankings` |
+| 管理（管理者のみ） | `/admin/members` |
+
+### サイドバー（デスクトップ専用）
+- `hidden md:flex` によりモバイルでは非表示
+- 左上にアプリアイコン＋「FootBoard」を表示し、その下にチーム名を表示
+- 「管理」は1つのナビ項目に統合（`/admin/*` 配下全体でアクティブ状態）
+
+### レスポンシブグリッド
+- ダッシュボードの統計カード：モバイル1列 → デスクトップ2列
+- メンバー詳細の統計グリッド：モバイル2列 → デスクトップ3列
+- 試合詳細のヘッダー：モバイル縦並び → デスクトップ横並び
 
 ---
 
@@ -92,7 +144,8 @@
 
 | ファイル | 種別 | 役割 |
 |----------|------|------|
-| `(app)/layout.tsx` | Server | 認証チェック・サイドバー描画 |
+| `(app)/layout.tsx` | Server | 認証チェック・サイドバー・BottomNav描画 |
+| `admin/layout.tsx` | Server | 管理セクション共通レイアウト・タブバー |
 | `matches/[id]/edit/page.tsx` | Server | データ取得・権限チェック |
 | `matches/[id]/edit/EditForm.tsx` | Client | フォーム状態管理・保存/削除操作 |
 | `matches/[id]/lineup/page.tsx` | Server | 試合・メンバー・ラインナップ並列取得 |
@@ -100,10 +153,11 @@
 | `rankings/page.tsx` | Server | 初期データ取得 |
 | `rankings/RankingsClient.tsx` | Client | タブ・フィルター操作 |
 | `members/[id]/MemberStats.tsx` | Client | Rechartsチャート描画 |
+| `login/LoginBanner.tsx` | Client | `useSearchParams()` を Suspense 内で使用 |
 
 ### 認証ヘルパー（`src/lib/auth.ts`）
 
-React `cache()` でラップした `getCurrentMember()` を各サーバーコンポーネントから呼ぶことで、**同一リクエスト内でのSupabase認証クエリを1回に集約**しています。レイアウトとページの両方から呼んでも実際のDBアクセスは1度だけです。
+React `cache()` でラップした `getCurrentMember()` を各サーバーコンポーネントから呼ぶことで、**同一リクエスト内でのSupabase認証クエリを1回に集約**しています。
 
 ```typescript
 export const getCurrentMember = cache(async (): Promise<CurrentMember | null> => {
@@ -119,15 +173,23 @@ export const getCurrentMember = cache(async (): Promise<CurrentMember | null> =>
 })
 ```
 
+### ミドルウェア（`src/proxy.ts`）
+
+未認証ユーザーを `/login` にリダイレクトします。以下のパスは認証不要（パブリック）：
+
+```typescript
+const publicPaths = ['/login', '/register', '/join']
+```
+
 ### スケルトンローダー
 
-各ルートセグメントに `loading.tsx` を配置し、サーバーサイドのデータ取得中にスケルトンUIを即時表示します。Next.js が自動的に Suspense バウンダリとして扱います。
+各ルートセグメントに `loading.tsx` を配置し、サーバーサイドのデータ取得中にスケルトンUIを即時表示します。
 
 対象ページ：`dashboard` / `matches` / `matches/[id]` / `matches/[id]/edit` / `matches/[id]/lineup` / `rankings` / `members`
 
 ### ダークモードの実装
 
-Tailwind CSS v4 は `tailwind.config.ts` を使わず CSS-first で設定します。`globals.css` に以下を追加することでクラスベースのダークモードを有効化しています：
+Tailwind CSS v4 は CSS-first で設定します。`globals.css` に以下を追加することでクラスベースのダークモードを有効化：
 
 ```css
 @custom-variant dark (&:where(.dark, .dark *));
@@ -148,9 +210,14 @@ Tailwind CSS v4 は `tailwind.config.ts` を使わず CSS-first で設定しま�
 | `events` | イベント記録（得点・アシスト・カード・相手得点） |
 
 ### PostgreSQL関数（SECURITY DEFINER）
-- `get_top_scorers(p_team_id, p_limit)` — 得点ランキング取得（ダッシュボード用）
-- `get_team_rankings(p_team_id, p_tag, p_date_from, p_date_to)` — 全カテゴリランキング取得（フィルター対応）
-- `register_team(p_team_name, p_member_name, p_member_id, p_shared_member_id, p_shared_member_email)` — チーム登録（管理者・共有アカウントを一括作成）
+
+| 関数 | 用途 |
+|------|------|
+| `register_team(p_team_name, p_member_name, p_member_id, p_shared_member_id, p_shared_member_email)` | チーム登録（管理者・共有アカウントを一括作成） |
+| `join_team(p_team_id, p_member_name, p_member_id)` | 招待コードでのメンバー参加（未認証から実行可） |
+| `get_team_member_auth(p_team_name)` | チームメンバーログイン用のメール取得 |
+| `get_top_scorers(p_team_id, p_limit)` | 得点ランキング取得（ダッシュボード用） |
+| `get_team_rankings(p_team_id, p_tag, p_date_from, p_date_to)` | 全カテゴリランキング取得（フィルター対応） |
 
 ---
 
@@ -160,7 +227,12 @@ Tailwind CSS v4 は `tailwind.config.ts` を使わず CSS-first で設定しま�
 src/
 ├── app/
 │   ├── (app)/                  # 認証必須ルートグループ
-│   │   ├── layout.tsx          # サイドバー・認証ガード
+│   │   ├── layout.tsx          # サイドバー・BottomNav・認証ガード
+│   │   ├── admin/
+│   │   │   ├── layout.tsx      # 管理セクション共通レイアウト（タブバー）
+│   │   │   ├── AdminTabs.tsx   # メンバー管理 / チーム設定 タブ (Client)
+│   │   │   ├── members/        # AdminMembersClient.tsx (Client)
+│   │   │   └── settings/       # TeamSettingsClient.tsx (Client)
 │   │   ├── dashboard/
 │   │   ├── matches/
 │   │   │   ├── [id]/
@@ -170,22 +242,28 @@ src/
 │   │   │   └── new/
 │   │   ├── members/
 │   │   │   └── [id]/           # MemberStats.tsx (Client, Recharts)
-│   │   ├── rankings/           # RankingsClient.tsx (Client)
-│   │   └── admin/
+│   │   └── rankings/           # RankingsClient.tsx (Client)
+│   ├── join/                   # 招待コードでのメンバー参加ページ
 │   ├── login/
+│   │   └── LoginBanner.tsx     # 参加/登録完了バナー (Client, Suspense対応)
 │   ├── register/
+│   ├── icon.png                # アプリアイコン（ファビコン・サイドバー共用）
 │   ├── globals.css
-│   └── layout.tsx              # ThemeProvider・suppressHydrationWarning
+│   └── layout.tsx              # ThemeProvider・メタデータ ("FootBoard")
 ├── components/
-│   ├── Sidebar.tsx
+│   ├── BottomNav.tsx           # モバイル専用ボトムナビバー (Client)
+│   ├── FormationEditor.tsx     # 編集可能フォーメーション (Client)
+│   ├── FormationField.tsx      # 表示専用フォーメーション（名前常時表示）
+│   ├── Sidebar.tsx             # デスクトップ専用サイドバー (Client)
 │   ├── ThemeProvider.tsx       # next-themes ラッパー
 │   └── ThemeToggle.tsx         # 🌙/☀️ トグルボタン
-└── lib/
-    ├── auth.ts                 # getCurrentMember() with React cache()
-    ├── matchTags.ts
-    └── supabase/
-        ├── client.ts
-        └── server.ts
+├── lib/
+│   ├── auth.ts                 # getCurrentMember() with React cache()
+│   ├── matchTags.ts
+│   └── supabase/
+│       ├── client.ts
+│       └── server.ts
+└── proxy.ts                    # 認証ミドルウェア（publicPaths管理）
 ```
 
 ---
