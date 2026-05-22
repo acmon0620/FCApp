@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { createMemberInvite, toggleMemberRole } from './actions'
 
 type Member = {
   id: string
@@ -12,6 +13,7 @@ type Member = {
   role: string
   birth_date: string | null
   preferred_foot: string | null
+  has_login: boolean
 }
 
 type MemberForm = {
@@ -83,6 +85,11 @@ export default function AdminMembersClient({ members, teamId }: { members: Membe
   const [editError, setEditError] = useState('')
   const [editLoading, setEditLoading] = useState(false)
 
+  const [inviteUrl, setInviteUrl] = useState<string | null>(null)
+  const [inviteLoading, setInviteLoading] = useState<string | null>(null)
+  const [inviteError, setInviteError] = useState('')
+  const [copied, setCopied] = useState(false)
+
   function startEdit(member: Member) {
     setEditingId(member.id)
     setEditForm({
@@ -135,6 +142,7 @@ export default function AdminMembersClient({ members, teamId }: { members: Membe
       team_id: teamId,
       name: r.name.trim(),
       role: 'member',
+      has_login: false,
       number: r.number ? Number(r.number) : null,
       position: r.position || null,
       birth_date: r.birth_date || null,
@@ -181,6 +189,7 @@ export default function AdminMembersClient({ members, teamId }: { members: Membe
       team_id: teamId,
       name: addForm.name,
       role: 'member',
+      has_login: !!email,
       number: addForm.number ? Number(addForm.number) : null,
       position: addForm.position || null,
       birth_date: addForm.birth_date || null,
@@ -200,10 +209,34 @@ export default function AdminMembersClient({ members, teamId }: { members: Membe
     router.refresh()
   }
 
-  async function toggleRole(member: Member) {
-    const supabase = createClient()
-    await supabase.from('members').update({ role: member.role === 'admin' ? 'member' : 'admin' }).eq('id', member.id)
+  async function handleToggleRole(member: Member) {
+    const result = await toggleMemberRole(member.id)
+    if (result.error) {
+      alert(result.error)
+      return
+    }
     router.refresh()
+  }
+
+  async function handleIssueInvite(member: Member) {
+    setInviteLoading(member.id)
+    setInviteError('')
+    const result = await createMemberInvite(member.id)
+    setInviteLoading(null)
+    if (result.error) {
+      setInviteError(result.error)
+      return
+    }
+    const url = `${window.location.origin}/invite/${result.code}`
+    setInviteUrl(url)
+    setCopied(false)
+  }
+
+  async function handleCopy() {
+    if (!inviteUrl) return
+    await navigator.clipboard.writeText(inviteUrl)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
 
   async function removeMember(memberId: string) {
@@ -214,163 +247,213 @@ export default function AdminMembersClient({ members, teamId }: { members: Membe
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-end gap-2">
-        <button onClick={() => { setShowBulkForm(true); setShowAddForm(false); setEditingId(null) }}
-          className="border border-green-600 text-green-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-50 transition-colors">
-          一括入力
-        </button>
-        <button onClick={() => { setShowAddForm(true); setShowBulkForm(false); setEditingId(null) }}
-          className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors">
-          + 1人追加
-        </button>
-      </div>
+    <>
+      {/* 招待URLモーダル */}
+      {inviteUrl && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-xl p-6 shadow-xl max-w-sm w-full space-y-4">
+            <h3 className="font-semibold text-gray-900 dark:text-white">招待リンクを発行しました</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              このリンクをメンバーに送ってください。メンバーがリンクを開いてメールアドレスとパスワードを設定することでログインできるようになります。有効期限は7日間です。
+            </p>
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-2 text-xs text-gray-700 dark:text-gray-300 break-all font-mono">
+              {inviteUrl}
+            </div>
+            {inviteError && <p className="text-red-500 text-sm">{inviteError}</p>}
+            <div className="flex gap-2">
+              <button
+                onClick={handleCopy}
+                className="flex-1 bg-green-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+              >
+                {copied ? 'コピーしました ✓' : 'URLをコピー'}
+              </button>
+              <button
+                onClick={() => setInviteUrl(null)}
+                className="flex-1 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 py-2 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              >
+                閉じる
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-      {showBulkForm && (
-        <form onSubmit={handleBulkAdd} className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm space-y-3">
-          <h2 className="font-semibold text-gray-800 dark:text-gray-100">メンバー一括入力</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b dark:border-gray-700">
-                  <th className="text-left py-2 pr-2 text-xs text-gray-500 dark:text-gray-400 font-medium w-8">#</th>
-                  <th className="text-left py-2 pr-2 text-xs text-gray-500 dark:text-gray-400 font-medium">名前 *</th>
-                  <th className="text-left py-2 pr-2 text-xs text-gray-500 dark:text-gray-400 font-medium w-20">背番号</th>
-                  <th className="text-left py-2 pr-2 text-xs text-gray-500 dark:text-gray-400 font-medium w-24">ポジション</th>
-                  <th className="text-left py-2 pr-2 text-xs text-gray-500 dark:text-gray-400 font-medium w-36">生年月日</th>
-                  <th className="text-left py-2 text-xs text-gray-500 dark:text-gray-400 font-medium w-24">利き足</th>
-                </tr>
-              </thead>
-              <tbody>
-                {bulkRows.map((row, i) => (
-                  <tr key={row.id} className="border-b dark:border-gray-700 last:border-0">
-                    <td className="py-1 pr-2 text-gray-400 dark:text-gray-500 text-xs">{i + 1}</td>
-                    <td className="py-1 pr-2">
-                      <input value={row.name} onChange={e => setBulkRows(rows => rows.map((r, j) => j === i ? { ...r, name: e.target.value } : r))}
-                        className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-green-500 dark:bg-gray-800 dark:text-gray-100" />
-                    </td>
-                    <td className="py-1 pr-2">
-                      <input type="number" value={row.number} min={1} onChange={e => setBulkRows(rows => rows.map((r, j) => j === i ? { ...r, number: e.target.value } : r))}
-                        className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-green-500 dark:bg-gray-800 dark:text-gray-100" />
-                    </td>
-                    <td className="py-1 pr-2">
-                      <input value={row.position} placeholder="FW" onChange={e => setBulkRows(rows => rows.map((r, j) => j === i ? { ...r, position: e.target.value } : r))}
-                        className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-green-500 dark:bg-gray-800 dark:text-gray-100" />
-                    </td>
-                    <td className="py-1 pr-2">
-                      <input type="date" value={row.birth_date} onChange={e => setBulkRows(rows => rows.map((r, j) => j === i ? { ...r, birth_date: e.target.value } : r))}
-                        className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-green-500 dark:bg-gray-800 dark:text-gray-100" />
-                    </td>
-                    <td className="py-1">
-                      <select value={row.preferred_foot} onChange={e => setBulkRows(rows => rows.map((r, j) => j === i ? { ...r, preferred_foot: e.target.value } : r))}
-                        className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-green-500 dark:bg-gray-800 dark:text-gray-100">
-                        <option value="">-</option>
-                        <option value="right">右</option>
-                        <option value="left">左</option>
-                        <option value="both">両</option>
-                      </select>
-                    </td>
+      <div className="space-y-4">
+        <div className="flex justify-end gap-2">
+          <button onClick={() => { setShowBulkForm(true); setShowAddForm(false); setEditingId(null) }}
+            className="border border-green-600 text-green-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-50 transition-colors">
+            一括入力
+          </button>
+          <button onClick={() => { setShowAddForm(true); setShowBulkForm(false); setEditingId(null) }}
+            className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors">
+            + 1人追加
+          </button>
+        </div>
+
+        {showBulkForm && (
+          <form onSubmit={handleBulkAdd} className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm space-y-3">
+            <h2 className="font-semibold text-gray-800 dark:text-gray-100">メンバー一括入力</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b dark:border-gray-700">
+                    <th className="text-left py-2 pr-2 text-xs text-gray-500 dark:text-gray-400 font-medium w-8">#</th>
+                    <th className="text-left py-2 pr-2 text-xs text-gray-500 dark:text-gray-400 font-medium">名前 *</th>
+                    <th className="text-left py-2 pr-2 text-xs text-gray-500 dark:text-gray-400 font-medium w-20">背番号</th>
+                    <th className="text-left py-2 pr-2 text-xs text-gray-500 dark:text-gray-400 font-medium w-24">ポジション</th>
+                    <th className="text-left py-2 pr-2 text-xs text-gray-500 dark:text-gray-400 font-medium w-36">生年月日</th>
+                    <th className="text-left py-2 text-xs text-gray-500 dark:text-gray-400 font-medium w-24">利き足</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <button type="button" onClick={() => setBulkRows(rows => [...rows, newBulkRow()])}
-            className="text-sm text-green-600 dark:text-green-400 hover:underline">+ 行を追加</button>
-          {bulkError && <p className="text-red-500 text-sm">{bulkError}</p>}
-          <div className="flex gap-2">
-            <button type="button" onClick={() => setShowBulkForm(false)}
-              className="flex-1 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 py-2 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-800">
-              キャンセル
-            </button>
-            <button type="submit" disabled={bulkLoading}
-              className="flex-1 bg-green-600 text-white py-2 rounded-lg text-sm disabled:opacity-50 hover:bg-green-700">
-              {bulkLoading ? '登録中...' : `${bulkRows.filter(r => r.name.trim()).length}人を登録する`}
-            </button>
-          </div>
-        </form>
-      )}
+                </thead>
+                <tbody>
+                  {bulkRows.map((row, i) => (
+                    <tr key={row.id} className="border-b dark:border-gray-700 last:border-0">
+                      <td className="py-1 pr-2 text-gray-400 dark:text-gray-500 text-xs">{i + 1}</td>
+                      <td className="py-1 pr-2">
+                        <input value={row.name} onChange={e => setBulkRows(rows => rows.map((r, j) => j === i ? { ...r, name: e.target.value } : r))}
+                          className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-green-500 dark:bg-gray-800 dark:text-gray-100" />
+                      </td>
+                      <td className="py-1 pr-2">
+                        <input type="number" value={row.number} min={1} onChange={e => setBulkRows(rows => rows.map((r, j) => j === i ? { ...r, number: e.target.value } : r))}
+                          className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-green-500 dark:bg-gray-800 dark:text-gray-100" />
+                      </td>
+                      <td className="py-1 pr-2">
+                        <input value={row.position} placeholder="FW" onChange={e => setBulkRows(rows => rows.map((r, j) => j === i ? { ...r, position: e.target.value } : r))}
+                          className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-green-500 dark:bg-gray-800 dark:text-gray-100" />
+                      </td>
+                      <td className="py-1 pr-2">
+                        <input type="date" value={row.birth_date} onChange={e => setBulkRows(rows => rows.map((r, j) => j === i ? { ...r, birth_date: e.target.value } : r))}
+                          className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-green-500 dark:bg-gray-800 dark:text-gray-100" />
+                      </td>
+                      <td className="py-1">
+                        <select value={row.preferred_foot} onChange={e => setBulkRows(rows => rows.map((r, j) => j === i ? { ...r, preferred_foot: e.target.value } : r))}
+                          className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-green-500 dark:bg-gray-800 dark:text-gray-100">
+                          <option value="">-</option>
+                          <option value="right">右</option>
+                          <option value="left">左</option>
+                          <option value="both">両</option>
+                        </select>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <button type="button" onClick={() => setBulkRows(rows => [...rows, newBulkRow()])}
+              className="text-sm text-green-600 dark:text-green-400 hover:underline">+ 行を追加</button>
+            {bulkError && <p className="text-red-500 text-sm">{bulkError}</p>}
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setShowBulkForm(false)}
+                className="flex-1 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 py-2 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-800">
+                キャンセル
+              </button>
+              <button type="submit" disabled={bulkLoading}
+                className="flex-1 bg-green-600 text-white py-2 rounded-lg text-sm disabled:opacity-50 hover:bg-green-700">
+                {bulkLoading ? '登録中...' : `${bulkRows.filter(r => r.name.trim()).length}人を登録する`}
+              </button>
+            </div>
+          </form>
+        )}
 
-      {showAddForm && (
-        <form onSubmit={handleAdd} className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm space-y-3">
-          <h2 className="font-semibold text-gray-800 dark:text-gray-100">新しいメンバー</h2>
-          <MemberFormFields form={addForm} onChange={setAddForm} />
-          <div>
-            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-              メールアドレス
-              <span className="ml-1 text-gray-400 dark:text-gray-500 font-normal">（任意・アプリにログインさせる場合に入力）</span>
-            </label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)}
-              className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-800 dark:text-gray-100" />
-          </div>
-          {addError && <p className="text-red-500 text-sm">{addError}</p>}
-          <div className="flex gap-2">
-            <button type="button" onClick={() => setShowAddForm(false)}
-              className="flex-1 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 py-2 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-800">
-              キャンセル
-            </button>
-            <button type="submit" disabled={addLoading}
-              className="flex-1 bg-green-600 text-white py-2 rounded-lg text-sm disabled:opacity-50 hover:bg-green-700">
-              {addLoading ? '追加中...' : '追加する'}
-            </button>
-          </div>
-        </form>
-      )}
+        {showAddForm && (
+          <form onSubmit={handleAdd} className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm space-y-3">
+            <h2 className="font-semibold text-gray-800 dark:text-gray-100">新しいメンバー</h2>
+            <MemberFormFields form={addForm} onChange={setAddForm} />
+            <div>
+              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                メールアドレス
+                <span className="ml-1 text-gray-400 dark:text-gray-500 font-normal">（任意・アプリにログインさせる場合に入力）</span>
+              </label>
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+                className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-800 dark:text-gray-100" />
+            </div>
+            {addError && <p className="text-red-500 text-sm">{addError}</p>}
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setShowAddForm(false)}
+                className="flex-1 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 py-2 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-800">
+                キャンセル
+              </button>
+              <button type="submit" disabled={addLoading}
+                className="flex-1 bg-green-600 text-white py-2 rounded-lg text-sm disabled:opacity-50 hover:bg-green-700">
+                {addLoading ? '追加中...' : '追加する'}
+              </button>
+            </div>
+          </form>
+        )}
 
-      {editingId && (
-        <form onSubmit={handleSaveEdit} className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm space-y-3 border-2 border-green-400">
-          <h2 className="font-semibold text-gray-800 dark:text-gray-100">メンバー情報を編集</h2>
-          <MemberFormFields form={editForm} onChange={setEditForm} />
-          {editError && <p className="text-red-500 text-sm">{editError}</p>}
-          <div className="flex gap-2">
-            <button type="button" onClick={() => setEditingId(null)}
-              className="flex-1 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 py-2 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-800">
-              キャンセル
-            </button>
-            <button type="submit" disabled={editLoading}
-              className="flex-1 bg-green-600 text-white py-2 rounded-lg text-sm disabled:opacity-50 hover:bg-green-700">
-              {editLoading ? '保存中...' : '保存する'}
-            </button>
-          </div>
-        </form>
-      )}
+        {editingId && (
+          <form onSubmit={handleSaveEdit} className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm space-y-3 border-2 border-green-400">
+            <h2 className="font-semibold text-gray-800 dark:text-gray-100">メンバー情報を編集</h2>
+            <MemberFormFields form={editForm} onChange={setEditForm} />
+            {editError && <p className="text-red-500 text-sm">{editError}</p>}
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setEditingId(null)}
+                className="flex-1 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 py-2 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-800">
+                キャンセル
+              </button>
+              <button type="submit" disabled={editLoading}
+                className="flex-1 bg-green-600 text-white py-2 rounded-lg text-sm disabled:opacity-50 hover:bg-green-700">
+                {editLoading ? '保存中...' : '保存する'}
+              </button>
+            </div>
+          </form>
+        )}
 
-      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 dark:bg-gray-800 border-b dark:border-gray-700">
-            <tr>
-              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-400 font-medium">名前</th>
-              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-400 font-medium">番号</th>
-              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-400 font-medium">ポジション</th>
-              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-400 font-medium">ロール</th>
-              <th className="px-4 py-3"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y dark:divide-gray-700">
-            {members.map(m => (
-              <tr key={m.id} className={editingId === m.id ? 'bg-green-50 dark:bg-green-900/20' : ''}>
-                <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{m.name}</td>
-                <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{m.number ?? '-'}</td>
-                <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{m.position ?? '-'}</td>
-                <td className="px-4 py-3">
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${m.role === 'admin' ? 'bg-green-100 text-green-700' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'}`}>
-                    {m.role === 'admin' ? '管理者' : 'メンバー'}
-                  </span>
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex gap-2 justify-end">
-                    <button onClick={() => startEdit(m)} className="text-xs text-green-600 dark:text-green-400 hover:underline">編集</button>
-                    <button onClick={() => toggleRole(m)} className="text-xs text-blue-500 hover:underline">
-                      {m.role === 'admin' ? 'メンバーに変更' : '管理者に変更'}
-                    </button>
-                    <button onClick={() => removeMember(m.id)} className="text-xs text-red-400 hover:underline">削除</button>
-                  </div>
-                </td>
+        {inviteError && !inviteUrl && (
+          <p className="text-red-500 text-sm bg-red-50 dark:bg-red-900/20 px-4 py-2 rounded-lg">{inviteError}</p>
+        )}
+
+        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 dark:bg-gray-800 border-b dark:border-gray-700">
+              <tr>
+                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-400 font-medium">名前</th>
+                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-400 font-medium">番号</th>
+                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-400 font-medium hidden sm:table-cell">ポジション</th>
+                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-400 font-medium">ロール</th>
+                <th className="px-4 py-3"></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y dark:divide-gray-700">
+              {members.map(m => (
+                <tr key={m.id} className={editingId === m.id ? 'bg-green-50 dark:bg-green-900/20' : ''}>
+                  <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
+                    {m.name}
+                    {!m.has_login && (
+                      <span className="ml-1.5 text-xs bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 px-1.5 py-0.5 rounded-full">未登録</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{m.number ?? '-'}</td>
+                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400 hidden sm:table-cell">{m.position ?? '-'}</td>
+                  <td className="px-4 py-3">
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${m.role === 'admin' ? 'bg-green-100 text-green-700' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'}`}>
+                      {m.role === 'admin' ? '管理者' : 'メンバー'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex gap-2 justify-end flex-wrap">
+                      <button onClick={() => startEdit(m)} className="text-xs text-green-600 dark:text-green-400 hover:underline">編集</button>
+                      <button onClick={() => handleToggleRole(m)} className="text-xs text-blue-500 hover:underline">
+                        {m.role === 'admin' ? 'メンバーに変更' : '管理者に変更'}
+                      </button>
+                      {!m.has_login && (
+                        <button
+                          onClick={() => handleIssueInvite(m)}
+                          disabled={inviteLoading === m.id}
+                          className="text-xs text-purple-500 hover:underline disabled:opacity-50"
+                        >
+                          {inviteLoading === m.id ? '発行中...' : '招待リンクを発行'}
+                        </button>
+                      )}
+                      <button onClick={() => removeMember(m.id)} className="text-xs text-red-400 hover:underline">削除</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
+    </>
   )
 }

@@ -10,7 +10,7 @@ export default async function AdminMembersPage() {
   const supabase = await createClient()
   const { data: members } = await supabase
     .from('members')
-    .select('id, name, number, position, role, birth_date, preferred_foot')
+    .select('id, name, number, position, role, birth_date, preferred_foot, has_login')
     .eq('team_id', me.team_id)
     .eq('is_system_account', false)
     .order('number', { ascending: true, nullsFirst: false })

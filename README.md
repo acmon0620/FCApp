@@ -24,11 +24,23 @@
 - 登録と同時に管理者アカウントと共有チームアカウントを自動生成（`register_team` RPC）
 - 登録完了後 `/login?registered=1` にリダイレクトし、緑のバナーで完了を通知
 
-#### チームへの参加（メンバー登録）
+#### チームへの参加（新規メンバー）
 - 管理者が「チーム設定」画面でチーム招待コード（チームUUID）を確認・コピー
 - メンバーは `/join` ページで招待コード・名前・メール・パスワードを入力してチームに参加
 - 参加完了後 `/login?joined=1` にリダイレクトし、緑のバナーで完了を通知
 - `join_team` RPC（SECURITY DEFINER）で未認証状態でもメンバー登録を安全に実行
+
+#### 既存メンバーへのログイン権限付与（招待リンク）
+管理者が一括登録などでメンバーレコードを作成したあと、そのメンバーに個別のログイン情報を設定させる招待フロー：
+
+1. 管理画面 → メンバー一覧で `未登録` バッジのメンバーの「招待リンクを発行」をクリック
+2. 生成された招待URL（有効期限7日）をコピーしてLINEなどで送付
+3. メンバーは `/invite/[code]` にアクセスし、自分の名前を確認のうえメールアドレスとパスワードを入力
+4. 登録完了後、Supabaseの認証アカウントが作成され、既存の出場記録・イベント等はすべて新アカウントに引き継がれる
+
+- `has_login` フラグ（`members` テーブル）で未登録状態を管理
+- 同一メンバーへの有効な招待が既にある場合は再利用（重複発行防止）
+- この操作は `SUPABASE_SERVICE_ROLE_KEY`（Admin API）を使用するため、環境変数への設定が必要
 
 #### ログイン（`/login`）
 2つのタブを切り替えてログイン：
@@ -54,8 +66,9 @@
 - 管理者は新規試合を追加可能
 
 #### 試合作成 / 編集
-- 対戦相手・試合日・種別（タグ）を設定
+- 対戦相手・試合日・種別（タグ）・試合時間（分）を設定
 - タグは自由入力＋候補からの選択（リーグ戦・練習試合・カップ戦・大会・フレンドリー・その他）
+- 試合時間は60分・80分・90分の候補付き自由入力（例：45分ハーフ → 90）
 - 管理者は試合情報の編集・削除が可能（削除時は関連するラインナップ・イベントも削除）
 
 #### スターティングメンバー設定
@@ -65,14 +78,18 @@
 
 #### 試合記録
 - **試合開始 / 終了**：ステータス管理。試合終了時に出場中の全選手の出場終了時間を自動記録
+- **デフォルト時間**：試合に`duration`が設定されている場合、記録画面の時間入力欄に自動セット
 - **イベント記録**：得点⚽ / 警告🟨 / 退場🟥（選手・アシスト・時間を記録）
 - **相手得点記録**：得点者・アシストの背番号を記録
 - **選手交代**：OUT選手の出場終了時間とIN選手の出場開始時間をセットで記録
 - **イベント削除**：× ボタンでイベント個別削除（スコアも自動調整）
-- 試合終了後もすべての記録を編集可能
+- 試合終了後もすべての記録を編集可能（交代・イベント追加可）
+- 試合終了後の選手リストは出場した全員を表示（出場時間付き）
+- 記録操作後に即時UI反映（`loadData()` を各ミューテーション後に呼び出し）
 
 #### 試合詳細
 - スコア表示
+- 試合時間（`duration`）を設定済みの場合はヘッダーに表示
 - フォーメーション表示（各トークンの下に常時名前を表示）
 - 出場メンバー一覧：先発バッジ / ポジション / 出場時間（例：0分〜45分）/ 計X分
 - イベント一覧：時系列で得点・アシスト・カード・相手得点を表示
@@ -97,8 +114,13 @@
 サイドバー / ボトムナビの「管理」タブから、内部タブで2セクションを切り替え：
 
 #### メンバー管理タブ
-- チームメンバーの一覧表示
-- 背番号・ロールの編集
+- チームメンバーの一覧表示（`未登録` バッジで未ログイン設定のメンバーを識別）
+- **1人追加**：名前・背番号・ポジション・生年月日・利き足を入力。メールアドレスを入力した場合は認証アカウントも同時作成
+- **一括入力**：テーブル形式で複数メンバーを一括登録
+- **編集**：メンバー情報のインライン編集
+- **ロール変更**：管理者 ↔ メンバーのロールをワンクリックで切り替え
+- **招待リンクを発行**：`has_login = false` のメンバーに対して表示。クリックで招待URL生成（有効期限7日）
+- **削除**：メンバーレコードの削除
 - メンバー個人ページで試合別得点・アシストのバーチャートを表示（Recharts）
 
 #### チーム設定タブ
@@ -154,6 +176,9 @@
 | `rankings/RankingsClient.tsx` | Client | タブ・フィルター操作 |
 | `members/[id]/MemberStats.tsx` | Client | Rechartsチャート描画 |
 | `login/LoginBanner.tsx` | Client | `useSearchParams()` を Suspense 内で使用 |
+| `admin/members/AdminMembersClient.tsx` | Client | メンバー管理・招待リンク発行UI |
+| `invite/[code]/page.tsx` | Server | 招待コード検証・メンバー名取得 |
+| `invite/[code]/ClaimForm.tsx` | Client | アカウント登録フォーム |
 
 ### 認証ヘルパー（`src/lib/auth.ts`）
 
@@ -178,7 +203,21 @@ export const getCurrentMember = cache(async (): Promise<CurrentMember | null> =>
 未認証ユーザーを `/login` にリダイレクトします。以下のパスは認証不要（パブリック）：
 
 ```typescript
-const publicPaths = ['/login', '/register', '/join']
+const publicPaths = ['/login', '/register', '/join', '/invite']
+```
+
+### Supabase Admin Client（`src/lib/supabase/admin.ts`）
+
+招待フローでのアカウント作成・IDマイグレーションに Service Role Key を使用：
+
+```typescript
+export function createAdminClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } },
+  )
+}
 ```
 
 ### スケルトンローダー
@@ -204,10 +243,31 @@ Tailwind CSS v4 は CSS-first で設定します。`globals.css` に以下を追
 | テーブル | 主な役割 |
 |----------|----------|
 | `teams` | チーム情報 |
-| `members` | ユーザーとチームの紐付け、ロール管理 |
-| `matches` | 試合情報（対戦相手・日付・スコア・ステータス・タグ） |
+| `members` | ユーザーとチームの紐付け、ロール管理、`has_login` フラグ |
+| `matches` | 試合情報（対戦相手・日付・スコア・ステータス・タグ・試合時間） |
 | `lineups` | 出場記録（選手・ポジション・開始/終了時間） |
 | `events` | イベント記録（得点・アシスト・カード・相手得点） |
+| `member_invites` | 既存メンバーへのログイン招待コード管理 |
+
+### `members` テーブルの主なカラム
+
+| カラム | 型 | 説明 |
+|--------|----|------|
+| `id` | uuid | Supabase Auth の `user.id` と一致（招待クレーム後に移行） |
+| `team_id` | uuid | 所属チーム |
+| `role` | text | `admin` or `member` |
+| `has_login` | boolean | ログイン情報（Authアカウント）が設定済みかどうか |
+
+### `member_invites` テーブル
+
+| カラム | 型 | 説明 |
+|--------|----|------|
+| `id` | uuid | PK |
+| `team_id` | uuid | 対象チーム |
+| `member_id` | uuid | 対象メンバー（ON UPDATE CASCADE） |
+| `code` | text | 招待コード（URLに含める） |
+| `expires_at` | timestamptz | 有効期限（発行から7日） |
+| `used_at` | timestamptz | 使用日時（NULL = 未使用） |
 
 ### PostgreSQL関数（SECURITY DEFINER）
 
@@ -231,7 +291,10 @@ src/
 │   │   ├── admin/
 │   │   │   ├── layout.tsx      # 管理セクション共通レイアウト（タブバー）
 │   │   │   ├── AdminTabs.tsx   # メンバー管理 / チーム設定 タブ (Client)
-│   │   │   ├── members/        # AdminMembersClient.tsx (Client)
+│   │   │   ├── members/
+│   │   │   │   ├── page.tsx
+│   │   │   │   ├── AdminMembersClient.tsx  # メンバー管理・招待UI (Client)
+│   │   │   │   └── actions.ts             # createMemberInvite / toggleMemberRole
 │   │   │   └── settings/       # TeamSettingsClient.tsx (Client)
 │   │   ├── dashboard/
 │   │   ├── matches/
@@ -243,7 +306,12 @@ src/
 │   │   ├── members/
 │   │   │   └── [id]/           # MemberStats.tsx (Client, Recharts)
 │   │   └── rankings/           # RankingsClient.tsx (Client)
-│   ├── join/                   # 招待コードでのメンバー参加ページ
+│   ├── invite/
+│   │   └── [code]/             # 招待リンク経由のアカウント登録（認証不要）
+│   │       ├── page.tsx        # 招待コード検証・メンバー名取得 (Server)
+│   │       ├── ClaimForm.tsx   # 登録フォーム (Client)
+│   │       └── actions.ts      # claimMemberAccount (Server Action)
+│   ├── join/                   # 招待コードでのチーム参加ページ
 │   ├── login/
 │   │   └── LoginBanner.tsx     # 参加/登録完了バナー (Client, Suspense対応)
 │   ├── register/
@@ -261,6 +329,7 @@ src/
 │   ├── auth.ts                 # getCurrentMember() with React cache()
 │   ├── matchTags.ts
 │   └── supabase/
+│       ├── admin.ts            # createAdminClient() — Service Role Key使用
 │       ├── client.ts
 │       └── server.ts
 └── proxy.ts                    # 認証ミドルウェア（publicPaths管理）
@@ -283,9 +352,39 @@ npm install
 ```env
 NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```
 
-### 3. 開発サーバーの起動
+`SUPABASE_SERVICE_ROLE_KEY` は Supabase ダッシュボードの **Project Settings → Data API → service_role** から取得します。招待リンク発行・アカウントクレーム機能に必要です（サーバーサイドのみで使用）。
+
+### 3. Supabase でのSQLマイグレーション
+
+Supabase ダッシュボードの **SQL Editor** で以下を実行：
+
+```sql
+-- 試合時間カラム
+ALTER TABLE matches ADD COLUMN IF NOT EXISTS duration integer;
+
+-- ログイン状態管理カラム
+ALTER TABLE members ADD COLUMN IF NOT EXISTS has_login boolean NOT NULL DEFAULT false;
+UPDATE members SET has_login = true WHERE role = 'admin';
+
+-- 招待コード管理テーブル
+CREATE TABLE IF NOT EXISTS member_invites (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  team_id uuid NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+  member_id uuid REFERENCES members(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  code text UNIQUE NOT NULL,
+  expires_at timestamptz NOT NULL,
+  used_at timestamptz,
+  created_at timestamptz DEFAULT now()
+);
+
+ALTER TABLE member_invites ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "service_role_only" ON member_invites USING (false);
+```
+
+### 4. 開発サーバーの起動
 
 ```bash
 npm run dev
@@ -297,4 +396,8 @@ npm run dev
 
 ## デプロイ
 
-[Vercel](https://vercel.com) へのデプロイを推奨します。環境変数に `NEXT_PUBLIC_SUPABASE_URL` と `NEXT_PUBLIC_SUPABASE_ANON_KEY` を設定してください。
+[Vercel](https://vercel.com) へのデプロイを推奨します。環境変数に以下を設定してください：
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
