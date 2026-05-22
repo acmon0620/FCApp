@@ -128,7 +128,7 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
   }
 
   async function addSubstitution() {
-    const outLineup = onField.find(l => l.member_id === subOut)
+    const outLineup = lineups.find(l => l.member_id === subOut)
     await Promise.all([
       supabase.from('lineups').insert({
         match_id: id,
@@ -207,7 +207,9 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
   if (!match) return <div className="text-gray-500 dark:text-gray-400">読み込み中...</div>
 
   const onField = lineups.filter(l => l.end_minute == null)
-  const notOnField = members.filter(m => !onField.some(l => l.member_id === m.id))
+  const displayLineups = match.status === 'finished' ? lineups : onField
+  const subOutCandidates = match.status === 'finished' ? lineups : onField
+  const notOnField = members.filter(m => !lineups.some(l => l.member_id === m.id))
   const memberLabel = (m: Member) => `${m.number ? `#${m.number} ` : ''}${m.name}`
 
   return (
@@ -230,8 +232,8 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
             </button>
           )}
           {match.status === 'finished' && (
-            <button onClick={() => router.push(`/matches/${id}`)} className="border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800">
-              詳細を見る
+            <button onClick={() => router.back()} className="border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800">
+              戻る
             </button>
           )}
         </div>
@@ -336,7 +338,9 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
       {/* フィールド上のメンバー */}
       <div className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold text-gray-800 dark:text-gray-100">フィールド上のメンバー（{onField.length}人）</h2>
+          <h2 className="font-semibold text-gray-800 dark:text-gray-100">
+            {match.status === 'finished' ? `出場メンバー（${lineups.length}人）` : `フィールド上のメンバー（${onField.length}人）`}
+          </h2>
           {match.status === 'scheduled' && onField.length < 11 && (
             <button
               onClick={() => { setAddMinute(0); setShowAddForm(true) }}
@@ -406,13 +410,13 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
                 value={subOut}
                 onChange={e => {
                   setSubOut(e.target.value)
-                  const outL = onField.find(l => l.member_id === e.target.value)
+                  const outL = subOutCandidates.find(l => l.member_id === e.target.value)
                   if (outL?.position) setSubPosition(outL.position)
                 }}
                 className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 text-sm dark:bg-gray-800 dark:text-gray-100"
               >
                 <option value="">選択してください</option>
-                {onField.map(l => {
+                {subOutCandidates.map(l => {
                   const m = members.find(m => m.id === l.member_id)
                   if (!m) return null
                   return (
@@ -467,16 +471,18 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
           </div>
         )}
 
-        {onField.length > 0 ? (
+        {displayLineups.length > 0 ? (
           <ul className="space-y-1">
-            {onField.map(l => {
+            {displayLineups.map(l => {
               const m = members.find(m => m.id === l.member_id)
               return (
                 <li key={l.id} className="text-sm py-1 flex items-center gap-1">
                   {m?.number != null && <span className="text-gray-400 dark:text-gray-500">#{m.number}</span>}
                   <span>{m?.name}</span>
                   {l.position && <span className="text-gray-400 dark:text-gray-500">({l.position})</span>}
-                  <span className="text-gray-400 dark:text-gray-500 text-xs ml-1">{l.start_minute}分〜</span>
+                  <span className="text-gray-400 dark:text-gray-500 text-xs ml-1">
+                    {l.start_minute}分〜{l.end_minute != null ? `${l.end_minute}分` : ''}
+                  </span>
                 </li>
               )
             })}
