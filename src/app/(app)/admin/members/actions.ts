@@ -73,6 +73,22 @@ export async function deleteMember(memberId: string): Promise<{ error?: string }
   if (memberId === me.id) return { error: '自分自身は削除できません' }
 
   const supabase = await createClient()
+
+  const { data: target } = await supabase
+    .from('members')
+    .select('id')
+    .eq('id', memberId)
+    .eq('team_id', me.team_id)
+    .single()
+  if (!target) return { error: 'メンバーが見つかりません' }
+
+  // FK参照を解除してから削除
+  await Promise.all([
+    supabase.from('events').update({ assisted_by: null }).eq('assisted_by', memberId),
+    supabase.from('events').update({ member_id: null }).eq('member_id', memberId),
+    supabase.from('lineups').delete().eq('member_id', memberId),
+  ])
+
   const { error } = await supabase
     .from('members')
     .delete()
