@@ -94,13 +94,20 @@ export default function FormationField({ players, onMove, onMoveEnd, readOnly = 
           }}
           onPointerDown={e => handlePlayerDown(e, p.id)}
         >
-          {/* Jersey number token */}
-          <div className="w-9 h-9 rounded-full bg-white shadow-lg flex items-center justify-center border-2 border-green-800">
-            <span className="text-xs font-bold text-green-900 leading-none">
-              {p.number ?? '?'}
-            </span>
-          </div>
-          {/* Always-visible name label */}
+          {/* T-shirt token */}
+          <svg
+            viewBox="0 0 44 42"
+            className="w-9"
+            style={{ filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.55))' }}
+          >
+            <path
+              d="M0,12 L10,0 L15,8 Q22,5 29,8 L34,0 L44,12 L36,18 L36,42 L8,42 L8,18 Z"
+              fill="white"
+              stroke="#14532d"
+              strokeWidth="1.5"
+            />
+          </svg>
+          {/* Name label */}
           <span
             className="text-white text-[10px] font-medium whitespace-nowrap leading-none pointer-events-none"
             style={{ textShadow: '0 1px 2px rgba(0,0,0,0.9), 0 0 4px rgba(0,0,0,0.7)' }}
