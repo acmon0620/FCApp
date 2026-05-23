@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
-import FormationField from '@/components/FormationField'
+import FormationField, { ShirtColor } from '@/components/FormationField'
 
 type Member = { id: string; name: string; number: number | null; position: string | null }
 type StarterEntry = { memberId: string; position: string; fieldX: number; fieldY: number }
@@ -32,9 +32,10 @@ type Props = {
   matchOpponent: string
   members: Member[]
   initialStarters: StarterEntry[]
+  shirtColor: ShirtColor
 }
 
-export default function LineupClient({ id, matchOpponent, members, initialStarters }: Props) {
+export default function LineupClient({ id, matchOpponent, members, initialStarters, shirtColor }: Props) {
   const router = useRouter()
   const [starters, setStarters] = useState<StarterEntry[]>(initialStarters)
   const [tab, setTab] = useState<Tab>('starter')
@@ -253,6 +254,7 @@ export default function LineupClient({ id, matchOpponent, members, initialStarte
                   const member = members.find(m => m.id === s.memberId)
                   return { id: s.memberId, number: member?.number ?? null, name: member?.name ?? '', x: s.fieldX, y: s.fieldY }
                 })}
+                shirtColor={shirtColor}
                 onMove={handleFieldMove}
               />
             </>

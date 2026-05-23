@@ -124,8 +124,8 @@ export default async function MatchDetailPage({ params }: Props) {
         <div className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm">
           <h2 className="font-semibold text-gray-800 dark:text-gray-100 mb-3">フォーメーション</h2>
           {isAdmin
-            ? <FormationEditor initialPlayers={formationPlayers} />
-            : <FormationField players={formationPlayers} readOnly />
+            ? <FormationEditor initialPlayers={formationPlayers} shirtColor={match.shirt_color ?? 'white'} />
+            : <FormationField players={formationPlayers} shirtColor={match.shirt_color ?? 'white'} readOnly />
           }
         </div>
       )}

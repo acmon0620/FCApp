@@ -27,7 +27,7 @@ export default async function LineupPage({ params }: Props) {
 
   const supabase = await createClient()
   const [matchRes, membersRes, lineupsRes] = await Promise.all([
-    supabase.from('matches').select('opponent').eq('id', id).eq('team_id', member.team_id).single(),
+    supabase.from('matches').select('opponent, shirt_color').eq('id', id).eq('team_id', member.team_id).single(),
     supabase
       .from('members')
       .select('id, name, number, position')
@@ -58,6 +58,7 @@ export default async function LineupPage({ params }: Props) {
       matchOpponent={matchRes.data.opponent}
       members={membersRes.data ?? []}
       initialStarters={initialStarters}
+      shirtColor={(matchRes.data.shirt_color as 'white' | 'blue' | 'red') ?? 'white'}
     />
   )
 }

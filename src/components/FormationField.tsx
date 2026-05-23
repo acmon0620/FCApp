@@ -10,8 +10,11 @@ export type FieldPlayer = {
   y: number  // 0–1
 }
 
+export type ShirtColor = 'white' | 'blue' | 'red'
+
 type Props = {
   players: FieldPlayer[]
+  shirtColor?: ShirtColor
   onMove?: (id: string, x: number, y: number) => void
   onMoveEnd?: (id: string, x: number, y: number) => void
   readOnly?: boolean
@@ -21,7 +24,7 @@ function clamp(v: number, min: number, max: number) {
   return Math.max(min, Math.min(max, v))
 }
 
-export default function FormationField({ players, onMove, onMoveEnd, readOnly = false }: Props) {
+export default function FormationField({ players, shirtColor = 'white', onMove, onMoveEnd, readOnly = false }: Props) {
   const fieldRef = useRef<HTMLDivElement>(null)
   const draggingId = useRef<string | null>(null)
   const lastPos = useRef<{ x: number; y: number } | null>(null)
@@ -95,18 +98,13 @@ export default function FormationField({ players, onMove, onMoveEnd, readOnly = 
           onPointerDown={e => handlePlayerDown(e, p.id)}
         >
           {/* T-shirt token */}
-          <svg
-            viewBox="0 0 44 42"
-            className="w-9"
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={`/tshirt-${shirtColor}.png`}
+            alt=""
+            className="w-10 h-10 object-contain pointer-events-none"
             style={{ filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.55))' }}
-          >
-            <path
-              d="M0,12 L10,0 L15,8 Q22,5 29,8 L34,0 L44,12 L36,18 L36,42 L8,42 L8,18 Z"
-              fill="white"
-              stroke="#14532d"
-              strokeWidth="1.5"
-            />
-          </svg>
+          />
           {/* Name label */}
           <span
             className="text-white text-[10px] font-medium whitespace-nowrap leading-none pointer-events-none"

@@ -2,13 +2,14 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import FormationField, { FieldPlayer } from './FormationField'
+import FormationField, { FieldPlayer, ShirtColor } from './FormationField'
 
 type Props = {
   initialPlayers: FieldPlayer[]
+  shirtColor?: ShirtColor
 }
 
-export default function FormationEditor({ initialPlayers }: Props) {
+export default function FormationEditor({ initialPlayers, shirtColor }: Props) {
   const [players, setPlayers] = useState(initialPlayers)
 
   function handleMove(id: string, x: number, y: number) {
@@ -23,6 +24,7 @@ export default function FormationEditor({ initialPlayers }: Props) {
   return (
     <FormationField
       players={players}
+      shirtColor={shirtColor}
       onMove={handleMove}
       onMoveEnd={handleMoveEnd}
     />

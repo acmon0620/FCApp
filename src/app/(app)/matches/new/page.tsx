@@ -11,6 +11,7 @@ export default function NewMatchPage() {
   const [date, setDate] = useState('')
   const [tag, setTag] = useState('')
   const [duration, setDuration] = useState('')
+  const [shirtColor, setShirtColor] = useState<'white' | 'blue' | 'red'>('white')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -43,6 +44,7 @@ export default function NewMatchPage() {
         status: 'scheduled',
         tag: tag || null,
         duration: duration ? Number(duration) : null,
+        shirt_color: shirtColor,
       })
       .select()
       .single()
@@ -117,6 +119,26 @@ export default function NewMatchPage() {
             <option value="90" />
           </datalist>
           <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">45分ハーフなら 90、前後半30分なら 60 など</p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ユニフォームカラー</label>
+          <div className="flex gap-3">
+            {([['white', '白'], ['blue', '青'], ['red', '赤']] as const).map(([color, label]) => (
+              <button
+                key={color}
+                type="button"
+                onClick={() => setShirtColor(color)}
+                className={`flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-colors ${
+                  shirtColor === color ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-gray-200 dark:border-gray-600 hover:border-gray-400'
+                }`}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={`/tshirt-${color}.png`} alt={label} className="w-12 h-12 object-contain" />
+                <span className="text-xs text-gray-600 dark:text-gray-400">{label}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         {error && <p className="text-red-500 text-sm">{error}</p>}

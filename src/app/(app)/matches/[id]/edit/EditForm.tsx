@@ -11,14 +11,16 @@ type Props = {
   initialDate: string
   initialTag: string
   initialDuration: number | null
+  initialShirtColor: 'white' | 'blue' | 'red'
 }
 
-export default function EditForm({ id, initialOpponent, initialDate, initialTag, initialDuration }: Props) {
+export default function EditForm({ id, initialOpponent, initialDate, initialTag, initialDuration, initialShirtColor }: Props) {
   const router = useRouter()
   const [opponent, setOpponent] = useState(initialOpponent)
   const [date, setDate] = useState(initialDate)
   const [tag, setTag] = useState(initialTag)
   const [duration, setDuration] = useState(initialDuration?.toString() ?? '')
+  const [shirtColor, setShirtColor] = useState<'white' | 'blue' | 'red'>(initialShirtColor)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState('')
@@ -30,7 +32,7 @@ export default function EditForm({ id, initialOpponent, initialDate, initialTag,
     const supabase = createClient()
     const { error: err } = await supabase
       .from('matches')
-      .update({ opponent, date, tag: tag || null, duration: duration ? Number(duration) : null })
+      .update({ opponent, date, tag: tag || null, duration: duration ? Number(duration) : null, shirt_color: shirtColor })
       .eq('id', id)
     if (err) {
       setError('保存に失敗しました')
@@ -113,6 +115,26 @@ export default function EditForm({ id, initialOpponent, initialDate, initialTag,
             <option value="90" />
           </datalist>
           <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">45分ハーフなら 90、前後半30分なら 60 など</p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ユニフォームカラー</label>
+          <div className="flex gap-3">
+            {([['white', '白'], ['blue', '青'], ['red', '赤']] as const).map(([color, label]) => (
+              <button
+                key={color}
+                type="button"
+                onClick={() => setShirtColor(color)}
+                className={`flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-colors ${
+                  shirtColor === color ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-gray-200 dark:border-gray-600 hover:border-gray-400'
+                }`}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={`/tshirt-${color}.png`} alt={label} className="w-12 h-12 object-contain" />
+                <span className="text-xs text-gray-600 dark:text-gray-400">{label}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         {error && <p className="text-red-500 text-sm">{error}</p>}
