@@ -120,21 +120,25 @@
 - **編集**：メンバー情報のインライン編集
 - **ロール変更**：管理者 ↔ メンバーのロールをワンクリックで切り替え
 - **招待リンクを発行**：`has_login = false` のメンバーに対して表示。クリックで招待URL生成（有効期限7日）
-- **削除**：メンバーレコードの削除
+- **削除**：メンバーレコードの削除（Server Action で管理者権限・同チーム所属を検証）
 - メンバー個人ページで試合別得点・アシストのバーチャートを表示（Recharts）
 
 #### チーム設定タブ
 - チーム名の変更・保存
-- チーム招待コード（UUID）の表示とコピーボタン
 
 ### ダークモード
-- ライト / ダーク / システム設定の3モードをサイドバーのボタンで切り替え
+- ライト / ダーク の切り替えボタンを表示（デスクトップはサイドバー、モバイルはヘッダー右上）
 - 選択はlocalStorageに保存され、ページをまたいで維持される
 - チャート（Recharts）の軸色・ツールチップ背景もダークモードに対応
 
 ---
 
 ## スマホ対応
+
+### トップヘッダー（モバイル専用）
+- 画面上部に固定表示（`md:hidden` でデスクトップでは非表示）
+- 左側：FootBoard アイコン＋アプリ名＋チーム名
+- 右側：テーマ切り替えボタン（🌙/☀️）＋ログアウトボタン
 
 ### ボトムナビバー（モバイル専用）
 - 画面下部に固定のタブバーを表示（`md:hidden` でデスクトップでは非表示）
@@ -166,7 +170,7 @@
 
 | ファイル | 種別 | 役割 |
 |----------|------|------|
-| `(app)/layout.tsx` | Server | 認証チェック・サイドバー・BottomNav描画 |
+| `(app)/layout.tsx` | Server | 認証チェック・MobileHeader・サイドバー・BottomNav描画 |
 | `admin/layout.tsx` | Server | 管理セクション共通レイアウト・タブバー |
 | `matches/[id]/edit/page.tsx` | Server | データ取得・権限チェック |
 | `matches/[id]/edit/EditForm.tsx` | Client | フォーム状態管理・保存/削除操作 |
@@ -294,7 +298,7 @@ src/
 │   │   │   ├── members/
 │   │   │   │   ├── page.tsx
 │   │   │   │   ├── AdminMembersClient.tsx  # メンバー管理・招待UI (Client)
-│   │   │   │   └── actions.ts             # createMemberInvite / toggleMemberRole
+│   │   │   │   └── actions.ts             # createMemberInvite / toggleMemberRole / deleteMember
 │   │   │   └── settings/       # TeamSettingsClient.tsx (Client)
 │   │   ├── dashboard/
 │   │   ├── matches/
@@ -322,9 +326,10 @@ src/
 │   ├── BottomNav.tsx           # モバイル専用ボトムナビバー (Client)
 │   ├── FormationEditor.tsx     # 編集可能フォーメーション (Client)
 │   ├── FormationField.tsx      # 表示専用フォーメーション（名前常時表示）
+│   ├── MobileHeader.tsx        # モバイル専用トップヘッダー (Client)
 │   ├── Sidebar.tsx             # デスクトップ専用サイドバー (Client)
 │   ├── ThemeProvider.tsx       # next-themes ラッパー
-│   └── ThemeToggle.tsx         # 🌙/☀️ トグルボタン
+│   └── ThemeToggle.tsx         # 🌙/☀️ トグルボタン（サイドバー用）
 ├── lib/
 │   ├── auth.ts                 # getCurrentMember() with React cache()
 │   ├── matchTags.ts
