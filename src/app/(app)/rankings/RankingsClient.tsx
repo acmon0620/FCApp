@@ -198,8 +198,8 @@ export default function RankingsClient({ teamId, availableTags }: { teamId: stri
                 <li
                   key={entry.memberId}
                   className={`flex items-center gap-4 px-5 py-3.5 border-b last:border-0 border-gray-200 dark:border-gray-700 ${
-                    i === 0 && !isNegative ? 'bg-yellow-50' :
-                    i === 0 &&  isNegative ? 'bg-red-50'    : ''
+                    i === 0 && !isNegative ? 'bg-yellow-50 dark:bg-yellow-900/20' :
+                    i === 0 &&  isNegative ? 'bg-red-50 dark:bg-red-900/20'       : ''
                   }`}
                 >
                   <div className="w-8 text-center flex-shrink-0">

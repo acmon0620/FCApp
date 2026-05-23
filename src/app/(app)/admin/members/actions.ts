@@ -67,6 +67,22 @@ export async function createMemberInvite(memberId: string): Promise<{ code?: str
   return { code }
 }
 
+export async function deleteMember(memberId: string): Promise<{ error?: string }> {
+  const me = await getAdminMember()
+  if (!me) return { error: '権限がありません' }
+  if (memberId === me.id) return { error: '自分自身は削除できません' }
+
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('members')
+    .delete()
+    .eq('id', memberId)
+    .eq('team_id', me.team_id)
+
+  if (error) return { error: error.message }
+  return {}
+}
+
 export async function toggleMemberRole(memberId: string): Promise<{ error?: string }> {
   const me = await getAdminMember()
   if (!me) return { error: '権限がありません' }

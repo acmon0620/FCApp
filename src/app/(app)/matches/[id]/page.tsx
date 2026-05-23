@@ -155,7 +155,7 @@ export default async function MatchDetailPage({ params }: Props) {
                 const minutes = l.end_minute != null ? l.end_minute - l.start_minute : null
                 return (
                   <tr key={l.id}>
-                    <td className="py-2">
+                    <td className="py-2 text-gray-900 dark:text-white">
                       {m?.number && <span className="text-gray-400 dark:text-gray-500 mr-1">#{m.number}</span>}
                       {m?.name}
                       {isStarter && (
@@ -200,7 +200,7 @@ export default async function MatchDetailPage({ params }: Props) {
                     </span>
                   ) : (
                     <>
-                      <span className="font-medium">{scorerName}</span>
+                      <span className="font-medium text-gray-900 dark:text-white">{scorerName}</span>
                       {assisterName && (
                         <span className="text-gray-500 dark:text-gray-400">（アシスト: {assisterName}）</span>
                       )}

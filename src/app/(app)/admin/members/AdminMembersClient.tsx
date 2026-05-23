@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { createMemberInvite, toggleMemberRole } from './actions'
+import { createMemberInvite, deleteMember, toggleMemberRole } from './actions'
 
 type Member = {
   id: string
@@ -241,8 +241,11 @@ export default function AdminMembersClient({ members, teamId }: { members: Membe
 
   async function removeMember(memberId: string) {
     if (!confirm('このメンバーを削除しますか？')) return
-    const supabase = createClient()
-    await supabase.from('members').delete().eq('id', memberId)
+    const result = await deleteMember(memberId)
+    if (result.error) {
+      alert('削除に失敗しました: ' + result.error)
+      return
+    }
     router.refresh()
   }
 
