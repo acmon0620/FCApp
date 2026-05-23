@@ -244,25 +244,17 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
         <div className="flex items-center justify-between">
           <div className="text-center flex-1">
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">自チーム</p>
-            <p className="text-4xl font-bold">{match.score_us}</p>
+            <p className="text-4xl font-bold text-gray-900 dark:text-white">{match.score_us}</p>
           </div>
           <div className="flex flex-col items-center gap-2 px-4">
             <p className="text-gray-300 dark:text-gray-600 text-2xl font-light">-</p>
-            <div className="flex items-center gap-1">
-              <label className="text-xs text-gray-500 dark:text-gray-400">現在</label>
-              <input
-                type="number"
-                value={minute}
-                onChange={e => setMinute(Number(e.target.value))}
-                className="w-12 border border-gray-200 dark:border-gray-600 rounded px-1 py-0.5 text-sm text-center dark:bg-gray-800 dark:text-gray-100"
-                min={0}
-              />
-              <span className="text-xs text-gray-500 dark:text-gray-400">分</span>
-            </div>
+            {match.duration != null && (
+              <p className="text-xs text-gray-500 dark:text-gray-400">{match.duration}分</p>
+            )}
           </div>
           <div className="text-center flex-1">
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">相手</p>
-            <p className="text-4xl font-bold">{match.score_them}</p>
+            <p className="text-4xl font-bold text-gray-900 dark:text-white">{match.score_them}</p>
             <div className="flex gap-1 mt-1 justify-center">
               <button
                 onClick={undoOpponentGoal}
@@ -478,7 +470,7 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
               return (
                 <li key={l.id} className="text-sm py-1 flex items-center gap-1">
                   {m?.number != null && <span className="text-gray-400 dark:text-gray-500">#{m.number}</span>}
-                  <span>{m?.name}</span>
+                  <span className="text-gray-900 dark:text-white">{m?.name}</span>
                   {l.position && <span className="text-gray-400 dark:text-gray-500">({l.position})</span>}
                   <span className="text-gray-400 dark:text-gray-500 text-xs ml-1">
                     {l.start_minute}分〜{l.end_minute != null ? `${l.end_minute}分` : ''}
@@ -577,7 +569,7 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
                       )}
                     </span>
                   ) : (
-                    <span>
+                    <span className="text-gray-900 dark:text-white">
                       {m?.name}
                       {a && <span className="text-gray-400 dark:text-gray-500">（アシスト: {a.name}）</span>}
                     </span>

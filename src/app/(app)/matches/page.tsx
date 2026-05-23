@@ -62,11 +62,22 @@ export default async function MatchesPage() {
                       {m.tag}
                     </span>
                   )}
-                  {m.status === 'finished' && (
-                    <span className="text-lg font-bold text-gray-800 dark:text-gray-100">
-                      {m.score_us} - {m.score_them}
-                    </span>
-                  )}
+                  {m.status === 'finished' && (() => {
+                    const result = m.score_us > m.score_them ? '勝' : m.score_us < m.score_them ? '負' : '分'
+                    const resultColor = m.score_us > m.score_them
+                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                      : m.score_us < m.score_them
+                        ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                        : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+                    return (
+                      <>
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${resultColor}`}>{result}</span>
+                        <span className="text-lg font-bold text-gray-800 dark:text-gray-100">
+                          {m.score_us} - {m.score_them}
+                        </span>
+                      </>
+                    )
+                  })()}
                   <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColor[m.status]}`}>
                     {statusLabel[m.status]}
                   </span>
