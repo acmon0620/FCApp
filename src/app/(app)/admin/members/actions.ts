@@ -73,6 +73,14 @@ export async function deleteMember(memberId: string): Promise<{ error?: string }
   if (memberId === me.id) return { error: '自分自身は削除できません' }
 
   const supabase = await createClient()
+
+  const { data: target } = await supabase
+    .from('members')
+    .select('has_login')
+    .eq('id', memberId)
+    .eq('team_id', me.team_id)
+    .single()
+
   const { error } = await supabase
     .from('members')
     .update({ deleted_at: new Date().toISOString() })
@@ -80,6 +88,18 @@ export async function deleteMember(memberId: string): Promise<{ error?: string }
     .eq('team_id', me.team_id)
 
   if (error) return { error: error.message }
+
+  // has_login のメンバーは Auth アカウントも削除する。
+  // これにより同じメールアドレスで別チームを新規作成できるようになる。
+  if (target?.has_login) {
+    try {
+      const adminClient = createAdminClient()
+      await adminClient.auth.admin.deleteUser(memberId)
+    } catch {
+      // Auth 削除失敗はログのみ。members 側は削除済みなので処理は続ける。
+    }
+  }
+
   return {}
 }
 
