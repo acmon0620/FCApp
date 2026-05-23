@@ -33,6 +33,7 @@ export default async function LineupPage({ params }: Props) {
       .select('id, name, number, position')
       .eq('team_id', member.team_id)
       .eq('is_system_account', false)
+      .is('deleted_at', null)
       .order('number', { ascending: true, nullsFirst: false }),
     supabase
       .from('lineups')

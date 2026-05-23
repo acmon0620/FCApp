@@ -80,7 +80,7 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
 
     const [matchRes, membersRes, lineupsRes, eventsRes] = await Promise.all([
       supabase.from('matches').select('*').eq('id', id).single(),
-      supabase.from('members').select('id, name, number').eq('team_id', memberRow.team_id).eq('is_system_account', false),
+      supabase.from('members').select('id, name, number').eq('team_id', memberRow.team_id).eq('is_system_account', false).is('deleted_at', null),
       supabase.from('lineups').select('*').eq('match_id', id).order('start_minute'),
       supabase.from('events').select('*').eq('match_id', id).order('minute'),
     ])
@@ -114,9 +114,11 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
   }
 
   async function addLineup() {
+    const m = members.find(m => m.id === addMember)
     await supabase.from('lineups').insert({
       match_id: id,
       member_id: addMember,
+      member_name: m?.name ?? null,
       position: addPosition || null,
       start_minute: addMinute,
     })
@@ -129,10 +131,12 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
 
   async function addSubstitution() {
     const outLineup = lineups.find(l => l.member_id === subOut)
+    const inMember = members.find(m => m.id === subIn)
     await Promise.all([
       supabase.from('lineups').insert({
         match_id: id,
         member_id: subIn,
+        member_name: inMember?.name ?? null,
         position: subPosition || null,
         start_minute: subMinute,
       }),
@@ -148,10 +152,14 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
   }
 
   async function addEvent() {
+    const scorer = members.find(m => m.id === eventMember)
+    const assister = assistMember ? members.find(m => m.id === assistMember) : null
     await supabase.from('events').insert({
       match_id: id,
       member_id: eventMember,
+      member_name: scorer?.name ?? null,
       assisted_by: eventType === 'goal' && assistMember ? assistMember : null,
+      assisted_by_name: eventType === 'goal' && assister ? assister.name : null,
       type: eventType,
       minute: eventMinute,
     })
@@ -470,7 +478,7 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
               return (
                 <li key={l.id} className="text-sm py-1 flex items-center gap-1">
                   {m?.number != null && <span className="text-gray-400 dark:text-gray-500">#{m.number}</span>}
-                  <span className="text-gray-900 dark:text-white">{m?.name}</span>
+                  <span className="text-gray-900 dark:text-white">{(l as { member_name?: string | null }).member_name ?? m?.name}</span>
                   {l.position && <span className="text-gray-400 dark:text-gray-500">({l.position})</span>}
                   <span className="text-gray-400 dark:text-gray-500 text-xs ml-1">
                     {l.start_minute}分〜{l.end_minute != null ? `${l.end_minute}分` : ''}
@@ -570,8 +578,11 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
                     </span>
                   ) : (
                     <span className="text-gray-900 dark:text-white">
-                      {m?.name}
-                      {a && <span className="text-gray-400 dark:text-gray-500">（アシスト: {a.name}）</span>}
+                      {(ev as { member_name?: string | null }).member_name ?? m?.name}
+                      {(() => {
+                        const aName = (ev as { assisted_by_name?: string | null }).assisted_by_name ?? a?.name
+                        return aName ? <span className="text-gray-400 dark:text-gray-500">（アシスト: {aName}）</span> : null
+                      })()}
                     </span>
                   )}
                   <button

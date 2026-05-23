@@ -13,6 +13,7 @@ export default async function MembersPage() {
     .select('id, name, number, position, role')
     .eq('team_id', me.team_id)
     .eq('is_system_account', false)
+    .is('deleted_at', null)
     .order('number', { ascending: true, nullsFirst: false })
 
   return (

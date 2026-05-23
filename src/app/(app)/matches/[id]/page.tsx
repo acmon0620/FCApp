@@ -53,7 +53,8 @@ export default async function MatchDetailPage({ params }: Props) {
     .filter(l => l.field_x != null && l.field_y != null)
     .map(l => {
       const m = l.members as { name: string; number: number | null } | null
-      return { id: l.id, number: m?.number ?? null, name: m?.name ?? '', x: l.field_x as number, y: l.field_y as number }
+      const displayName = (l as { member_name?: string | null }).member_name ?? m?.name ?? ''
+      return { id: l.id, number: m?.number ?? null, name: displayName, x: l.field_x as number, y: l.field_y as number }
     })
 
   const eventIcon: Record<string, string> = {
@@ -151,13 +152,14 @@ export default async function MatchDetailPage({ params }: Props) {
             <tbody className="divide-y dark:divide-gray-700">
               {lineups.map(l => {
                 const m = l.members as { name: string; number: number } | null
+                const displayName = (l as { member_name?: string | null }).member_name ?? m?.name
                 const isStarter = l.start_minute === 0
                 const minutes = l.end_minute != null ? l.end_minute - l.start_minute : null
                 return (
                   <tr key={l.id}>
                     <td className="py-2 text-gray-900 dark:text-white">
                       {m?.number && <span className="text-gray-400 dark:text-gray-500 mr-1">#{m.number}</span>}
-                      {m?.name}
+                      {displayName}
                       {isStarter && (
                         <span className="ml-1.5 text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">先発</span>
                       )}
@@ -183,10 +185,10 @@ export default async function MatchDetailPage({ params }: Props) {
         <h2 className="font-semibold text-gray-800 dark:text-gray-100 mb-3">イベント</h2>
         {events && events.length > 0 ? (
           <ul className="space-y-2">
-            {events.map((ev: { id: string; type: string; minute: number; member_id: string | null; assisted_by: string | null; opponent_scorer: string | null; opponent_assist: string | null }) => {
+            {events.map((ev: { id: string; type: string; minute: number; member_id: string | null; member_name?: string | null; assisted_by: string | null; assisted_by_name?: string | null; opponent_scorer: string | null; opponent_assist: string | null }) => {
               const isOpponent = ev.type === 'opponent_goal'
-              const scorerName = !isOpponent && ev.member_id ? memberNameById[ev.member_id] : null
-              const assisterName = ev.assisted_by ? memberNameById[ev.assisted_by] : null
+              const scorerName = !isOpponent ? (ev.member_name ?? (ev.member_id ? memberNameById[ev.member_id] : null)) : null
+              const assisterName = ev.assisted_by_name ?? (ev.assisted_by ? memberNameById[ev.assisted_by] : null)
               return (
                 <li key={ev.id} className="flex items-center gap-3 text-sm">
                   <span className="text-xl">{eventIcon[ev.type] ?? '•'}</span>
