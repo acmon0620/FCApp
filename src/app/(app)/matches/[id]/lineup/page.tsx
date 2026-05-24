@@ -37,20 +37,26 @@ export default async function LineupPage({ params }: Props) {
       .order('number', { ascending: true, nullsFirst: false }),
     supabase
       .from('lineups')
-      .select('member_id, position, field_x, field_y')
+      .select('member_id, position, field_x, field_y, start_minute')
       .eq('match_id', id)
-      .eq('start_minute', 0)
       .is('end_minute', null),
   ])
 
   if (!matchRes.data) redirect('/matches')
 
-  const initialStarters = (lineupsRes.data ?? []).map((l, i) => ({
+  // start_minute=0: 先発, start_minute=null: ベンチ, start_minute>0: 交代選手（除外）
+  const allEntries = lineupsRes.data ?? []
+  const starterEntries = allEntries.filter(l => l.start_minute === 0)
+  const participantEntries = allEntries.filter(l => l.start_minute === 0 || l.start_minute === null)
+
+  const initialStarters = starterEntries.map((l, i) => ({
     memberId: l.member_id,
     position: l.position ?? '',
     fieldX: l.field_x ?? DEFAULT_POSITIONS[i]?.x ?? 0.5,
     fieldY: l.field_y ?? DEFAULT_POSITIONS[i]?.y ?? 0.5,
   }))
+
+  const initialParticipantIds = participantEntries.map(l => l.member_id)
 
   return (
     <LineupClient
@@ -58,6 +64,7 @@ export default async function LineupPage({ params }: Props) {
       matchOpponent={matchRes.data.opponent}
       members={membersRes.data ?? []}
       initialStarters={initialStarters}
+      initialParticipantIds={initialParticipantIds}
       shirtColor={(matchRes.data.shirt_color as 'white' | 'blue' | 'red') ?? 'white'}
     />
   )

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 type Member = { id: string; name: string; number: number | null }
-type Lineup = { id: string; member_id: string; position: string | null; start_minute: number; end_minute: number | null }
+type Lineup = { id: string; member_id: string; position: string | null; start_minute: number | null; end_minute: number | null }
 type Event = {
   id: string
   member_id: string | null
@@ -103,7 +103,8 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
 
   async function finishMatch() {
     const scoreUs = events.filter(e => e.type === 'goal').length
-    const stillOnField = lineups.filter(l => l.end_minute == null)
+    // start_minute が null のベンチ選手は出場扱いにしない
+    const stillOnField = lineups.filter(l => l.start_minute !== null && l.end_minute == null)
     await Promise.all([
       supabase.from('matches').update({ status: 'finished', score_us: scoreUs }).eq('id', id),
       ...stillOnField.map(l =>
@@ -115,13 +116,23 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
 
   async function addLineup() {
     const m = members.find(m => m.id === addMember)
-    await supabase.from('lineups').insert({
-      match_id: id,
-      member_id: addMember,
-      member_name: m?.name ?? null,
-      position: addPosition || null,
-      start_minute: addMinute,
-    })
+    const benchEntry = lineups.find(l => l.member_id === addMember && l.start_minute === null && l.end_minute === null)
+    if (benchEntry) {
+      // ベンチ登録済みの選手はフィールドに昇格
+      await supabase.from('lineups').update({
+        start_minute: addMinute,
+        position: addPosition || null,
+        member_name: m?.name ?? null,
+      }).eq('id', benchEntry.id)
+    } else {
+      await supabase.from('lineups').insert({
+        match_id: id,
+        member_id: addMember,
+        member_name: m?.name ?? null,
+        position: addPosition || null,
+        start_minute: addMinute,
+      })
+    }
     setShowAddForm(false)
     setAddMember('')
     setAddPosition('')
@@ -130,20 +141,29 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
   }
 
   async function addSubstitution() {
-    const outLineup = lineups.find(l => l.member_id === subOut)
+    const outLineup = lineups.find(l => l.member_id === subOut && l.end_minute == null)
     const inMember = members.find(m => m.id === subIn)
-    await Promise.all([
-      supabase.from('lineups').insert({
-        match_id: id,
-        member_id: subIn,
-        member_name: inMember?.name ?? null,
-        position: subPosition || null,
-        start_minute: subMinute,
-      }),
-      outLineup
-        ? supabase.from('lineups').update({ end_minute: subMinute }).eq('id', outLineup.id)
-        : Promise.resolve(),
-    ])
+    const benchEntry = lineups.find(l => l.member_id === subIn && l.start_minute === null && l.end_minute === null)
+
+    const inOp = benchEntry
+      ? supabase.from('lineups').update({
+          start_minute: subMinute,
+          position: subPosition || benchEntry.position,
+          member_name: inMember?.name ?? null,
+        }).eq('id', benchEntry.id)
+      : supabase.from('lineups').insert({
+          match_id: id,
+          member_id: subIn,
+          member_name: inMember?.name ?? null,
+          position: subPosition || null,
+          start_minute: subMinute,
+        })
+
+    const outOp = outLineup
+      ? supabase.from('lineups').update({ end_minute: subMinute }).eq('id', outLineup.id)
+      : Promise.resolve()
+
+    await Promise.all([inOp, outOp])
     setShowSubForm(false)
     setSubOut('')
     setSubIn('')
@@ -214,10 +234,25 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
 
   if (!match) return <div className="text-gray-500 dark:text-gray-400">読み込み中...</div>
 
-  const onField = lineups.filter(l => l.end_minute == null)
-  const displayLineups = match.status === 'finished' ? lineups : onField
-  const subOutCandidates = match.status === 'finished' ? lineups : onField
-  const notOnField = members.filter(m => !lineups.some(l => l.member_id === m.id))
+  // start_minute=null はベンチ（参加登録済み・未出場）
+  const onField = lineups.filter(l => l.start_minute !== null && l.end_minute == null)
+  const bench = lineups.filter(l => l.start_minute === null && l.end_minute === null)
+  const onFieldIds = new Set(onField.map(l => l.member_id))
+  const benchMemberIds = new Set(bench.map(l => l.member_id))
+
+  // 出場済み（start_minute が設定されている）
+  const playedLineups = lineups.filter(l => l.start_minute !== null)
+  const displayLineups = match.status === 'finished' ? playedLineups : onField
+  const subOutCandidates = match.status === 'finished' ? playedLineups : onField
+
+  // 交代IN候補: ベンチ選手のみ（ベンチ未設定の場合は全非出場者にフォールバック）
+  const benchMembers = members.filter(m => benchMemberIds.has(m.id))
+  // 追加フォーム（試合前）: フィールド外の全選手
+  const notOnField = members.filter(m => !onFieldIds.has(m.id))
+  // イベント記録: 参加メンバー（先発+ベンチ）。未設定の場合は全メンバー
+  const attendingIds = new Set(lineups.map(l => l.member_id))
+  const eventMembers = attendingIds.size > 0 ? members.filter(m => attendingIds.has(m.id)) : members
+
   const memberLabel = (m: Member) => `${m.number ? `#${m.number} ` : ''}${m.name}`
 
   return (
@@ -435,7 +470,7 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
                 className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 text-sm dark:bg-gray-800 dark:text-gray-100"
               >
                 <option value="">選択してください</option>
-                {notOnField.map(m => (
+                {(benchMembers.length > 0 ? benchMembers : notOnField).map(m => (
                   <option key={m.id} value={m.id}>{memberLabel(m)}</option>
                 ))}
               </select>
@@ -525,7 +560,7 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
               className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 text-sm dark:bg-gray-800 dark:text-gray-100"
             >
               <option value="">選手を選択</option>
-              {members.map(m => (
+              {eventMembers.map(m => (
                 <option key={m.id} value={m.id}>{memberLabel(m)}</option>
               ))}
             </select>
@@ -536,7 +571,7 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
                 className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 text-sm dark:bg-gray-800 dark:text-gray-100"
               >
                 <option value="">アシスト選手（なければスキップ）</option>
-                {members.filter(m => m.id !== eventMember).map(m => (
+                {eventMembers.filter(m => m.id !== eventMember).map(m => (
                   <option key={m.id} value={m.id}>{memberLabel(m)}</option>
                 ))}
               </select>
