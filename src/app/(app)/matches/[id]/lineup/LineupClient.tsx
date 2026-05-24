@@ -85,13 +85,11 @@ export default function LineupClient({ id, matchOpponent, members, initialStarte
     setSaving(true)
     const supabase = createClient()
 
-    // 既存の先発・ベンチエントリを削除（交代記録は残す）
-    await supabase
-      .from('lineups')
-      .delete()
-      .eq('match_id', id)
-      .is('end_minute', null)
-      .or('start_minute.eq.0,start_minute.is.null')
+    // 既存の先発（start_minute=0）とベンチ（start_minute=null）を削除（交代記録は残す）
+    await Promise.all([
+      supabase.from('lineups').delete().eq('match_id', id).eq('start_minute', 0).is('end_minute', null),
+      supabase.from('lineups').delete().eq('match_id', id).is('start_minute', null).is('end_minute', null),
+    ])
 
     const starterIds = new Set(starters.map(s => s.memberId))
 
