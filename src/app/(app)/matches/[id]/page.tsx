@@ -93,7 +93,7 @@ export default async function MatchDetailPage({ params }: Props) {
             >
               編集
             </Link>
-            {match.status === 'scheduled' && (
+            {match.status !== 'finished' && (
               <Link
                 href={`/matches/${id}/lineup`}
                 className="border border-green-600 text-green-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-50 transition-colors"
@@ -133,7 +133,7 @@ export default async function MatchDetailPage({ params }: Props) {
       <div className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-semibold text-gray-800 dark:text-gray-100">出場メンバー</h2>
-          {isAdmin && match.status === 'scheduled' && (
+          {isAdmin && match.status !== 'finished' && (
             <Link href={`/matches/${id}/lineup`} className="text-sm text-green-600 dark:text-green-400 hover:underline">
               メンバーを設定
             </Link>
