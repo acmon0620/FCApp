@@ -3,6 +3,7 @@
 import { useEffect, useState, use } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import Link from 'next/link'
 
 type Member = { id: string; name: string; number: number | null }
 type Lineup = { id: string; member_id: string; position: string | null; start_minute: number | null; end_minute: number | null }
@@ -15,7 +16,7 @@ type Event = {
   opponent_scorer: string | null
   opponent_assist: string | null
 }
-type Match = { id: string; opponent: string; date: string; status: string; score_us: number; score_them: number; duration: number | null }
+type Match = { id: string; opponent: string; date: string; score_us: number; score_them: number; duration: number | null }
 
 const EVENT_ICON: Record<string, string> = {
   goal: '⚽',
@@ -33,15 +34,14 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
   const [members, setMembers] = useState<Member[]>([])
   const [lineups, setLineups] = useState<Lineup[]>([])
   const [events, setEvents] = useState<Event[]>([])
-  const [minute, setMinute] = useState(0)
 
-  // 追加フォーム（試合前）
+  // 追加フォーム
   const [showAddForm, setShowAddForm] = useState(false)
   const [addMember, setAddMember] = useState('')
   const [addPosition, setAddPosition] = useState('')
   const [addMinute, setAddMinute] = useState(0)
 
-  // 交代フォーム（試合中）
+  // 交代フォーム
   const [showSubForm, setShowSubForm] = useState(false)
   const [subOut, setSubOut] = useState('')
   const [subIn, setSubIn] = useState('')
@@ -85,46 +85,16 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
       supabase.from('events').select('*').eq('match_id', id).order('minute'),
     ])
 
-    if (matchRes.data) {
-      setMatch(prev => {
-        if (!prev && matchRes.data.duration) setMinute(matchRes.data.duration)
-        return matchRes.data
-      })
-    }
+    if (matchRes.data) setMatch(matchRes.data)
     if (membersRes.data) setMembers(membersRes.data)
     if (lineupsRes.data) setLineups(lineupsRes.data)
     if (eventsRes.data) setEvents(eventsRes.data)
-  }
-
-  async function startMatch() {
-    await supabase.from('matches').update({ status: 'in_progress' }).eq('id', id)
-    await loadData()
-  }
-
-  async function revertToInProgress() {
-    await supabase.from('matches').update({ status: 'in_progress' }).eq('id', id)
-    await supabase.from('lineups').update({ end_minute: null }).eq('match_id', id)
-    await loadData()
-  }
-
-  async function finishMatch() {
-    const scoreUs = events.filter(e => e.type === 'goal').length
-    // start_minute が null のベンチ選手は出場扱いにしない
-    const stillOnField = lineups.filter(l => l.start_minute !== null && l.end_minute == null)
-    await Promise.all([
-      supabase.from('matches').update({ status: 'finished', score_us: scoreUs }).eq('id', id),
-      ...stillOnField.map(l =>
-        supabase.from('lineups').update({ end_minute: minute }).eq('id', l.id)
-      ),
-    ])
-    await loadData()
   }
 
   async function addLineup() {
     const m = members.find(m => m.id === addMember)
     const benchEntry = lineups.find(l => l.member_id === addMember && l.start_minute === null && l.end_minute === null)
     if (benchEntry) {
-      // ベンチ登録済みの選手はフィールドに昇格
       await supabase.from('lineups').update({
         start_minute: addMinute,
         position: addPosition || null,
@@ -236,22 +206,13 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
 
   if (!match) return <div className="text-gray-500 dark:text-gray-400">読み込み中...</div>
 
-  // start_minute=null はベンチ（参加登録済み・未出場）
   const onField = lineups.filter(l => l.start_minute !== null && l.end_minute == null)
   const bench = lineups.filter(l => l.start_minute === null && l.end_minute === null)
   const onFieldIds = new Set(onField.map(l => l.member_id))
   const benchMemberIds = new Set(bench.map(l => l.member_id))
 
-  // 出場済み（start_minute が設定されている）
-  const playedLineups = lineups.filter(l => l.start_minute !== null)
-  const displayLineups = match.status === 'finished' ? playedLineups : onField
-  const subOutCandidates = match.status === 'finished' ? playedLineups : onField
-
-  // 交代IN候補: ベンチ選手のみ（ベンチ未設定の場合は全非出場者にフォールバック）
   const benchMembers = members.filter(m => benchMemberIds.has(m.id))
-  // 追加フォーム（試合前）: フィールド外の全選手
   const notOnField = members.filter(m => !onFieldIds.has(m.id))
-  // イベント記録: 参加メンバー（先発+ベンチ）。未設定の場合は全メンバー
   const attendingIds = new Set(lineups.map(l => l.member_id))
   const eventMembers = attendingIds.size > 0 ? members.filter(m => attendingIds.has(m.id)) : members
 
@@ -266,26 +227,18 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
           <p className="text-gray-500 dark:text-gray-400 text-sm">vs {match.opponent} · {match.date}</p>
         </div>
         <div className="flex gap-2">
-          {match.status === 'scheduled' && (
-            <button onClick={startMatch} className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700">
-              試合開始
-            </button>
-          )}
-          {match.status === 'in_progress' && (
-            <button onClick={finishMatch} className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700">
-              試合終了
-            </button>
-          )}
-          {match.status === 'finished' && (
-            <>
-              <button onClick={revertToInProgress} className="border border-orange-400 text-orange-600 dark:text-orange-400 px-4 py-2 rounded-lg text-sm font-medium hover:bg-orange-50 dark:hover:bg-orange-900/20">
-                試合中に戻す
-              </button>
-              <button onClick={() => router.back()} className="border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800">
-                戻る
-              </button>
-            </>
-          )}
+          <Link
+            href={`/matches/${id}/lineup`}
+            className="border border-green-600 text-green-600 dark:text-green-400 px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
+          >
+            メンバー設定
+          </Link>
+          <button
+            onClick={() => router.back()}
+            className="border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
+          >
+            戻る
+          </button>
         </div>
       </div>
 
@@ -313,7 +266,7 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
                 -
               </button>
               <button
-                onClick={() => { setOpponentMinute(minute); setShowOpponentForm(true) }}
+                onClick={() => { setOpponentMinute(0); setShowOpponentForm(true) }}
                 className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded hover:bg-red-200 font-medium"
               >
                 + 得点
@@ -381,30 +334,27 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
       <div className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-semibold text-gray-800 dark:text-gray-100">
-            {match.status === 'finished' ? `出場メンバー（${lineups.length}人）` : `フィールド上のメンバー（${onField.length}人）`}
+            フィールド上のメンバー（{onField.length}人）
           </h2>
-          {match.status === 'scheduled' && onField.length < 11 && (
+          <div className="flex gap-3">
+            {onField.length < 11 && (
+              <button
+                onClick={() => { setAddMinute(0); setShowAddForm(true) }}
+                className="text-sm text-green-600 dark:text-green-400 hover:underline"
+              >
+                + 追加
+              </button>
+            )}
             <button
-              onClick={() => { setAddMinute(0); setShowAddForm(true) }}
-              className="text-sm text-green-600 dark:text-green-400 hover:underline"
-            >
-              + 追加
-            </button>
-          )}
-          {match.status === 'scheduled' && onField.length >= 11 && (
-            <span className="text-xs text-green-600 dark:text-green-400 font-medium">先発11人</span>
-          )}
-          {(match.status === 'in_progress' || match.status === 'finished') && (
-            <button
-              onClick={() => { setSubMinute(minute); setShowSubForm(true) }}
+              onClick={() => { setSubMinute(0); setShowSubForm(true) }}
               className="text-sm text-green-600 dark:text-green-400 hover:underline font-medium"
             >
               交代を追加
             </button>
-          )}
+          </div>
         </div>
 
-        {/* 追加フォーム（試合前） */}
+        {/* 追加フォーム */}
         {showAddForm && (
           <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 mb-3 space-y-2">
             <select
@@ -442,7 +392,7 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
           </div>
         )}
 
-        {/* 交代フォーム（試合中） */}
+        {/* 交代フォーム */}
         {showSubForm && (
           <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 mb-3 space-y-2">
             <p className="text-xs font-medium text-gray-700 dark:text-gray-300">選手交代</p>
@@ -452,13 +402,13 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
                 value={subOut}
                 onChange={e => {
                   setSubOut(e.target.value)
-                  const outL = subOutCandidates.find(l => l.member_id === e.target.value)
+                  const outL = onField.find(l => l.member_id === e.target.value)
                   if (outL?.position) setSubPosition(outL.position)
                 }}
                 className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 text-sm dark:bg-gray-800 dark:text-gray-100"
               >
                 <option value="">選択してください</option>
-                {subOutCandidates.map(l => {
+                {onField.map(l => {
                   const m = members.find(m => m.id === l.member_id)
                   if (!m) return null
                   return (
@@ -513,9 +463,9 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
           </div>
         )}
 
-        {displayLineups.length > 0 ? (
+        {onField.length > 0 ? (
           <ul className="space-y-1">
-            {displayLineups.map(l => {
+            {onField.map(l => {
               const m = members.find(m => m.id === l.member_id)
               return (
                 <li key={l.id} className="text-sm py-1 flex items-center gap-1">
@@ -523,7 +473,7 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
                   <span className="text-gray-900 dark:text-white">{(l as { member_name?: string | null }).member_name ?? m?.name}</span>
                   {l.position && <span className="text-gray-400 dark:text-gray-500">({l.position})</span>}
                   <span className="text-gray-400 dark:text-gray-500 text-xs ml-1">
-                    {l.start_minute}分〜{l.end_minute != null ? `${l.end_minute}分` : ''}
+                    {l.start_minute}分〜
                   </span>
                 </li>
               )
@@ -534,12 +484,12 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
         )}
       </div>
 
-      {/* イベント（自チーム） */}
+      {/* イベント */}
       <div className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-semibold text-gray-800 dark:text-gray-100">イベント</h2>
           <button
-            onClick={() => { setShowEventForm(true); setEventMinute(minute) }}
+            onClick={() => { setShowEventForm(true); setEventMinute(0) }}
             className="text-sm text-green-600 dark:text-green-400 hover:underline"
           >
             + 記録

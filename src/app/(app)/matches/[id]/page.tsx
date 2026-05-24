@@ -64,12 +64,6 @@ export default async function MatchDetailPage({ params }: Props) {
     opponent_goal: '⚽',
   }
 
-  const statusLabel: Record<string, string> = {
-    scheduled: '予定',
-    in_progress: '試合中',
-    finished: '終了',
-  }
-
   return (
     <div className="space-y-6 max-w-2xl">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -77,7 +71,7 @@ export default async function MatchDetailPage({ params }: Props) {
           <Link href="/matches" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">← 試合一覧</Link>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">vs {match.opponent}</h1>
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-            <p className="text-gray-500 dark:text-gray-400">{match.date} · {statusLabel[match.status]}{match.duration ? ` · ${match.duration}分` : ''}</p>
+            <p className="text-gray-500 dark:text-gray-400">{match.date}{match.duration ? ` · ${match.duration}分` : ''}</p>
             {match.tag && (
               <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${TAG_COLOR[match.tag] ?? 'bg-gray-100 text-gray-600'}`}>
                 {match.tag}
@@ -93,32 +87,28 @@ export default async function MatchDetailPage({ params }: Props) {
             >
               編集
             </Link>
-            {match.status !== 'finished' && (
-              <Link
-                href={`/matches/${id}/lineup`}
-                className="border border-green-600 text-green-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-50 transition-colors"
-              >
-                メンバー設定
-              </Link>
-            )}
+            <Link
+              href={`/matches/${id}/lineup`}
+              className="border border-green-600 text-green-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-50 transition-colors"
+            >
+              メンバー設定
+            </Link>
             <Link
               href={`/matches/${id}/record`}
               className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
             >
-              {match.status === 'scheduled' ? '試合を開始' : '記録する'}
+              記録する
             </Link>
           </div>
         )}
       </div>
 
-      {match.status !== 'scheduled' && (
-        <div className="bg-white dark:bg-gray-900 rounded-xl p-6 shadow-sm text-center">
-          <p className="text-5xl font-bold text-gray-900 dark:text-white">
-            {match.score_us} <span className="text-gray-300 dark:text-gray-600">-</span> {match.score_them}
-          </p>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">自チーム · 相手</p>
-        </div>
-      )}
+      <div className="bg-white dark:bg-gray-900 rounded-xl p-6 shadow-sm text-center">
+        <p className="text-5xl font-bold text-gray-900 dark:text-white">
+          {match.score_us} <span className="text-gray-300 dark:text-gray-600">-</span> {match.score_them}
+        </p>
+        <p className="text-gray-500 dark:text-gray-400 mt-1">自チーム · 相手</p>
+      </div>
 
       {formationPlayers.length > 0 && (
         <div className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm">
@@ -133,52 +123,55 @@ export default async function MatchDetailPage({ params }: Props) {
       <div className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-semibold text-gray-800 dark:text-gray-100">出場メンバー</h2>
-          {isAdmin && match.status !== 'finished' && (
+          {isAdmin && (
             <Link href={`/matches/${id}/lineup`} className="text-sm text-green-600 dark:text-green-400 hover:underline">
               メンバーを設定
             </Link>
           )}
         </div>
-        {lineups && lineups.length > 0 ? (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-gray-500 dark:text-gray-400 border-b dark:border-gray-700">
-                <th className="pb-2">名前</th>
-                <th className="pb-2">ポジション</th>
-                <th className="pb-2">出場時間</th>
-                <th className="pb-2 text-right">計</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y dark:divide-gray-700">
-              {lineups.map(l => {
-                const m = l.members as { name: string; number: number } | null
-                const displayName = (l as { member_name?: string | null }).member_name ?? m?.name
-                const isStarter = l.start_minute === 0
-                const minutes = l.end_minute != null ? l.end_minute - l.start_minute : null
-                return (
-                  <tr key={l.id}>
-                    <td className="py-2 text-gray-900 dark:text-white">
-                      {m?.number && <span className="text-gray-400 dark:text-gray-500 mr-1">#{m.number}</span>}
-                      {displayName}
-                      {isStarter && (
-                        <span className="ml-1.5 text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">先発</span>
-                      )}
-                    </td>
-                    <td className="py-2 text-gray-600 dark:text-gray-400">{l.position ?? '-'}</td>
-                    <td className="py-2 text-gray-600 dark:text-gray-400">
-                      {l.start_minute}分 〜 {l.end_minute != null ? `${l.end_minute}分` : '試合中'}
-                    </td>
-                    <td className="py-2 text-right font-medium text-gray-700 dark:text-gray-300">
-                      {minutes != null ? `${minutes}分` : '-'}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        ) : (
-          <p className="text-gray-400 dark:text-gray-500 text-sm">出場記録がありません</p>
-        )}
+        {(() => {
+          const playingLineups = (lineups ?? []).filter(l => l.start_minute !== null)
+          return playingLineups.length > 0 ? (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-gray-500 dark:text-gray-400 border-b dark:border-gray-700">
+                  <th className="pb-2">名前</th>
+                  <th className="pb-2">ポジション</th>
+                  <th className="pb-2">出場時間</th>
+                  <th className="pb-2 text-right">計</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y dark:divide-gray-700">
+                {playingLineups.map(l => {
+                  const m = l.members as { name: string; number: number } | null
+                  const displayName = (l as { member_name?: string | null }).member_name ?? m?.name
+                  const isStarter = l.start_minute === 0
+                  const minutes = l.end_minute != null ? l.end_minute - (l.start_minute ?? 0) : null
+                  return (
+                    <tr key={l.id}>
+                      <td className="py-2 text-gray-900 dark:text-white">
+                        {m?.number && <span className="text-gray-400 dark:text-gray-500 mr-1">#{m.number}</span>}
+                        {displayName}
+                        {isStarter && (
+                          <span className="ml-1.5 text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">先発</span>
+                        )}
+                      </td>
+                      <td className="py-2 text-gray-600 dark:text-gray-400">{l.position ?? '-'}</td>
+                      <td className="py-2 text-gray-600 dark:text-gray-400">
+                        {l.start_minute}分〜{l.end_minute != null ? `${l.end_minute}分` : ''}
+                      </td>
+                      <td className="py-2 text-right font-medium text-gray-700 dark:text-gray-300">
+                        {minutes != null ? `${minutes}分` : '-'}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          ) : (
+            <p className="text-gray-400 dark:text-gray-500 text-sm">出場記録がありません</p>
+          )
+        })()}
       </div>
 
       <div className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm">
