@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
@@ -41,6 +41,14 @@ export default function MatchEventsClient({
   const router = useRouter()
   const supabase = createClient()
 
+  // ローカル状態でイベントを管理（router.refresh() を待たずに即時表示）
+  const [events, setEvents] = useState<Event[]>(initialEvents)
+
+  // router.refresh() 完了後、サーバーからの最新データで同期
+  useEffect(() => {
+    setEvents(initialEvents)
+  }, [initialEvents])
+
   const [showForm, setShowForm] = useState(false)
   const [eventType, setEventType] = useState<'goal' | 'yellow_card' | 'red_card' | 'opponent_goal'>('goal')
   const [eventMember, setEventMember] = useState('')
@@ -49,6 +57,12 @@ export default function MatchEventsClient({
   const [opponentScorer, setOpponentScorer] = useState('')
   const [opponentAssist, setOpponentAssist] = useState('')
   const [saving, setSaving] = useState(false)
+
+  // eventMembers の名前もルックアップに含める
+  const nameLookup = useMemo(() => ({
+    ...memberNameById,
+    ...Object.fromEntries(eventMembers.map(m => [m.id, m.name])),
+  }), [memberNameById, eventMembers])
 
   const memberLabel = (m: Member) => `${m.number ? `#${m.number} ` : ''}${m.name}`
 
@@ -64,6 +78,7 @@ export default function MatchEventsClient({
 
   async function addEvent() {
     setSaving(true)
+
     if (eventType === 'opponent_goal') {
       const payload: Record<string, string | number | null> = {
         match_id: matchId,
@@ -73,28 +88,58 @@ export default function MatchEventsClient({
       }
       if (opponentScorer) payload.opponent_scorer = opponentScorer
       if (opponentAssist) payload.opponent_assist = opponentAssist
-      await Promise.all([
+
+      const [, { data: inserted }] = await Promise.all([
         supabase.from('matches').update({ score_them: scoreThem + 1 }).eq('id', matchId),
-        supabase.from('events').insert(payload),
+        supabase.from('events').insert(payload).select().single(),
       ])
+
+      if (inserted) {
+        const ev = inserted as unknown as Event
+        setEvents(prev =>
+          [...prev, ev].sort((a, b) => a.minute - b.minute)
+        )
+      }
     } else {
-      await supabase.from('events').insert({
-        match_id: matchId,
-        member_id: eventMember,
-        assisted_by: eventType === 'goal' && assistMember ? assistMember : null,
-        type: eventType,
-        minute: eventMinute,
-      })
+      const { data: inserted } = await supabase
+        .from('events')
+        .insert({
+          match_id: matchId,
+          member_id: eventMember,
+          assisted_by: eventType === 'goal' && assistMember ? assistMember : null,
+          type: eventType,
+          minute: eventMinute,
+        })
+        .select()
+        .single()
+
       if (eventType === 'goal') {
         await supabase.from('matches').update({ score_us: scoreUs + 1 }).eq('id', matchId)
       }
+
+      if (inserted) {
+        const m = eventMembers.find(mem => mem.id === eventMember)
+        const a = assistMember ? eventMembers.find(mem => mem.id === assistMember) : null
+        const ev = inserted as unknown as Event & { member_name?: string | null; assisted_by_name?: string | null }
+        setEvents(prev =>
+          [...prev, {
+            ...ev,
+            member_name: ev.member_name ?? m?.name ?? null,
+            assisted_by_name: ev.assisted_by_name ?? a?.name ?? null,
+          }].sort((a, b) => a.minute - b.minute)
+        )
+      }
     }
+
     setShowForm(false)
     setSaving(false)
-    router.refresh()
+    router.refresh() // スコア表示（サーバーコンポーネント）を更新
   }
 
   async function deleteEvent(ev: Event) {
+    // 即時反映
+    setEvents(prev => prev.filter(e => e.id !== ev.id))
+
     await supabase.from('events').delete().eq('id', ev.id)
     if (ev.type === 'goal') {
       await supabase.from('matches').update({ score_us: Math.max(0, scoreUs - 1) }).eq('id', matchId)
@@ -215,12 +260,14 @@ export default function MatchEventsClient({
         </div>
       )}
 
-      {initialEvents.length > 0 ? (
+      {events.length > 0 ? (
         <ul className="space-y-2">
-          {initialEvents.map(ev => {
+          {events.map(ev => {
             const isOpponent = ev.type === 'opponent_goal'
-            const scorerName = !isOpponent ? (ev.member_name ?? (ev.member_id ? memberNameById[ev.member_id] : null)) : null
-            const assisterName = ev.assisted_by_name ?? (ev.assisted_by ? memberNameById[ev.assisted_by] : null)
+            const scorerName = !isOpponent
+              ? (ev.member_name ?? (ev.member_id ? nameLookup[ev.member_id] : null))
+              : null
+            const assisterName = ev.assisted_by_name ?? (ev.assisted_by ? nameLookup[ev.assisted_by] : null)
             return (
               <li key={ev.id} className="flex items-center gap-3 text-sm">
                 <span className="text-xl">{EVENT_ICON[ev.type] ?? '•'}</span>
