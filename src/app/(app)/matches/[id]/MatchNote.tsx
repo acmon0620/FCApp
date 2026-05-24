@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 type Props = {
@@ -12,6 +13,7 @@ type Props = {
 const MAX = 300
 
 export default function MatchNote({ matchId, initialNote, isAdmin }: Props) {
+  const router = useRouter()
   const [note, setNote] = useState(initialNote ?? '')
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(initialNote ?? '')
@@ -24,6 +26,7 @@ export default function MatchNote({ matchId, initialNote, isAdmin }: Props) {
     setNote(draft.trim())
     setEditing(false)
     setSaving(false)
+    router.refresh()
   }
 
   function startEdit() {

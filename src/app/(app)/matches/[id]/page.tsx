@@ -8,6 +8,7 @@ import FormationEditor from '@/components/FormationEditor'
 import { getCurrentMember } from '@/lib/auth'
 import MatchNote from './MatchNote'
 import MatchEventsClient from './MatchEventsClient'
+import MatchSubstitutionClient from './MatchSubstitutionClient'
 
 type Props = { params: Promise<{ id: string }> }
 
@@ -63,6 +64,27 @@ export default async function MatchDetailPage({ params }: Props) {
 
   const isAdmin = member.role === 'admin'
   const teamName = member.teams?.name ?? 'チーム'
+
+  // 交代フォーム用：現在出場中（start_minute != null, end_minute == null）とベンチ（start_minute == null）
+  type RawLineup = {
+    id: string
+    member_id: string
+    member_name: string | null
+    start_minute: number | null
+    end_minute: number | null
+    members: { name: string; number: number | null } | null
+  }
+  const toEntry = (l: RawLineup) => ({
+    id: l.id,
+    displayName: l.member_name ?? (l.members as { name: string; number: number | null } | null)?.name ?? '',
+    number: (l.members as { name: string; number: number | null } | null)?.number ?? null,
+  })
+  const activeLineups = (lineups ?? [] as RawLineup[])
+    .filter((l: RawLineup) => l.start_minute !== null && l.end_minute === null)
+    .map(toEntry)
+  const benchLineups = (lineups ?? [] as RawLineup[])
+    .filter((l: RawLineup) => l.start_minute === null && l.end_minute === null)
+    .map(toEntry)
 
   async function completeMatch() {
     'use server'
@@ -201,6 +223,13 @@ export default async function MatchDetailPage({ params }: Props) {
       </div>
 
       <MatchNote matchId={id} initialNote={(match as { note?: string | null }).note ?? null} isAdmin={isAdmin} />
+
+      <MatchSubstitutionClient
+        matchId={id}
+        activeLineups={activeLineups}
+        benchLineups={benchLineups}
+        isAdmin={isAdmin}
+      />
 
       <MatchEventsClient
         matchId={id}
