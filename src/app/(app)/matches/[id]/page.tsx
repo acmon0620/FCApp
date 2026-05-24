@@ -6,6 +6,7 @@ import FormationField from '@/components/FormationField'
 import FormationEditor from '@/components/FormationEditor'
 import { getCurrentMember } from '@/lib/auth'
 import MatchNote from './MatchNote'
+import MatchEventsClient from './MatchEventsClient'
 
 type Props = { params: Promise<{ id: string }> }
 
@@ -47,6 +48,18 @@ export default async function MatchDetailPage({ params }: Props) {
     : { data: [] as { id: string; name: string }[] }
   const memberNameById = Object.fromEntries((eventMembersData ?? []).map((m: { id: string; name: string }) => [m.id, m.name]))
 
+  const { data: allMembers } = await supabase
+    .from('members')
+    .select('id, name, number')
+    .eq('team_id', member.team_id)
+    .eq('is_system_account', false)
+    .is('deleted_at', null)
+
+  const attendingIds = new Set((lineups ?? []).map(l => l.member_id))
+  const eventMembers = (attendingIds.size > 0
+    ? (allMembers ?? []).filter((m: { id: string }) => attendingIds.has(m.id))
+    : (allMembers ?? [])) as { id: string; name: string; number: number | null }[]
+
   const isAdmin = member.role === 'admin'
 
   const starters = (lineups ?? []).filter(l => l.start_minute === 0)
@@ -57,13 +70,6 @@ export default async function MatchDetailPage({ params }: Props) {
       const displayName = (l as { member_name?: string | null }).member_name ?? m?.name ?? ''
       return { id: l.id, number: m?.number ?? null, name: displayName, x: l.field_x as number, y: l.field_y as number }
     })
-
-  const eventIcon: Record<string, string> = {
-    goal: '⚽',
-    yellow_card: '🟨',
-    red_card: '🟥',
-    opponent_goal: '⚽',
-  }
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -93,12 +99,6 @@ export default async function MatchDetailPage({ params }: Props) {
               className="border border-green-600 text-green-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-50 transition-colors"
             >
               メンバー設定
-            </Link>
-            <Link
-              href={`/matches/${id}/record`}
-              className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
-            >
-              記録する
             </Link>
           </div>
         )}
@@ -177,41 +177,15 @@ export default async function MatchDetailPage({ params }: Props) {
 
       <MatchNote matchId={id} initialNote={(match as { note?: string | null }).note ?? null} isAdmin={isAdmin} />
 
-      <div className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm">
-        <h2 className="font-semibold text-gray-800 dark:text-gray-100 mb-3">イベント</h2>
-        {events && events.length > 0 ? (
-          <ul className="space-y-2">
-            {events.map((ev: { id: string; type: string; minute: number; member_id: string | null; member_name?: string | null; assisted_by: string | null; assisted_by_name?: string | null; opponent_scorer: string | null; opponent_assist: string | null }) => {
-              const isOpponent = ev.type === 'opponent_goal'
-              const scorerName = !isOpponent ? (ev.member_name ?? (ev.member_id ? memberNameById[ev.member_id] : null)) : null
-              const assisterName = ev.assisted_by_name ?? (ev.assisted_by ? memberNameById[ev.assisted_by] : null)
-              return (
-                <li key={ev.id} className="flex items-center gap-3 text-sm">
-                  <span className="text-xl">{eventIcon[ev.type] ?? '•'}</span>
-                  <span className="text-gray-500 dark:text-gray-400 w-10">{ev.minute}&apos;</span>
-                  {isOpponent ? (
-                    <span className="text-red-600 font-medium">
-                      相手{ev.opponent_scorer ? ` #${ev.opponent_scorer}` : ''}
-                      {ev.opponent_assist && (
-                        <span className="text-gray-500 dark:text-gray-400 font-normal">（アシスト: #{ev.opponent_assist}）</span>
-                      )}
-                    </span>
-                  ) : (
-                    <>
-                      <span className="font-medium text-gray-900 dark:text-white">{scorerName}</span>
-                      {assisterName && (
-                        <span className="text-gray-500 dark:text-gray-400">（アシスト: {assisterName}）</span>
-                      )}
-                    </>
-                  )}
-                </li>
-              )
-            })}
-          </ul>
-        ) : (
-          <p className="text-gray-400 dark:text-gray-500 text-sm">イベント記録がありません</p>
-        )}
-      </div>
+      <MatchEventsClient
+        matchId={id}
+        scoreUs={match.score_us}
+        scoreThem={match.score_them}
+        initialEvents={events ?? []}
+        eventMembers={eventMembers}
+        memberNameById={memberNameById}
+        isAdmin={isAdmin}
+      />
     </div>
   )
 }
