@@ -82,38 +82,39 @@ export default function MatchEventsClient({
     if (eventType === 'opponent_goal') {
       const payload: Record<string, string | number | null> = {
         match_id: matchId,
-        member_id: null,
         type: 'opponent_goal',
         minute: eventMinute,
       }
       if (opponentScorer) payload.opponent_scorer = opponentScorer
       if (opponentAssist) payload.opponent_assist = opponentAssist
 
-      await Promise.all([
+      const [, { error: insertError }] = await Promise.all([
         supabase.from('matches').update({ score_them: scoreThem + 1 }).eq('id', matchId),
         supabase.from('events').insert(payload),
       ])
 
-      // .select() は RLS の RETURNING ブロックで null になる場合があるため、
-      // 入力値から直接オブジェクトを組み立ててローカル state に追加する
-      setEvents(prev =>
-        [...prev, {
-          id: `temp-${Date.now()}`,
-          type: 'opponent_goal',
-          minute: eventMinute,
-          member_id: null,
-          member_name: null,
-          assisted_by: null,
-          assisted_by_name: null,
-          opponent_scorer: opponentScorer || null,
-          opponent_assist: opponentAssist || null,
-        }].sort((a, b) => a.minute - b.minute)
-      )
+      if (insertError) {
+        console.error('[MatchEventsClient] opponent_goal insert failed:', insertError)
+      } else {
+        setEvents(prev =>
+          [...prev, {
+            id: `temp-${Date.now()}`,
+            type: 'opponent_goal',
+            minute: eventMinute,
+            member_id: null,
+            member_name: null,
+            assisted_by: null,
+            assisted_by_name: null,
+            opponent_scorer: opponentScorer || null,
+            opponent_assist: opponentAssist || null,
+          }].sort((a, b) => a.minute - b.minute)
+        )
+      }
     } else {
       const m = eventMembers.find(mem => mem.id === eventMember)
       const a = assistMember ? eventMembers.find(mem => mem.id === assistMember) : null
 
-      await supabase.from('events').insert({
+      const { error: insertError } = await supabase.from('events').insert({
         match_id: matchId,
         member_id: eventMember,
         assisted_by: eventType === 'goal' && assistMember ? assistMember : null,
@@ -121,23 +122,26 @@ export default function MatchEventsClient({
         minute: eventMinute,
       })
 
-      if (eventType === 'goal') {
-        await supabase.from('matches').update({ score_us: scoreUs + 1 }).eq('id', matchId)
+      if (insertError) {
+        console.error('[MatchEventsClient] event insert failed:', insertError)
+      } else {
+        if (eventType === 'goal') {
+          await supabase.from('matches').update({ score_us: scoreUs + 1 }).eq('id', matchId)
+        }
+        setEvents(prev =>
+          [...prev, {
+            id: `temp-${Date.now()}`,
+            type: eventType,
+            minute: eventMinute,
+            member_id: eventMember,
+            member_name: m?.name ?? null,
+            assisted_by: (eventType === 'goal' && assistMember) ? assistMember : null,
+            assisted_by_name: a?.name ?? null,
+            opponent_scorer: null,
+            opponent_assist: null,
+          }].sort((a, b) => a.minute - b.minute)
+        )
       }
-
-      setEvents(prev =>
-        [...prev, {
-          id: `temp-${Date.now()}`,
-          type: eventType,
-          minute: eventMinute,
-          member_id: eventMember,
-          member_name: m?.name ?? null,
-          assisted_by: (eventType === 'goal' && assistMember) ? assistMember : null,
-          assisted_by_name: a?.name ?? null,
-          opponent_scorer: null,
-          opponent_assist: null,
-        }].sort((a, b) => a.minute - b.minute)
-      )
     }
 
     setShowForm(false)
