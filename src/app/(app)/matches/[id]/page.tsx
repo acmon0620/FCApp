@@ -8,7 +8,7 @@ import FormationEditor from '@/components/FormationEditor'
 import { getCurrentMember } from '@/lib/auth'
 import MatchNote from './MatchNote'
 import MatchEventsClient from './MatchEventsClient'
-import MatchSubstitutionClient from './MatchSubstitutionClient'
+import MatchLineupSection from './MatchLineupSection'
 
 type Props = { params: Promise<{ id: string }> }
 
@@ -65,25 +65,38 @@ export default async function MatchDetailPage({ params }: Props) {
   const isAdmin = member.role === 'admin'
   const teamName = member.teams?.name ?? 'チーム'
 
-  // 交代フォーム用：現在出場中（start_minute != null, end_minute == null）とベンチ（start_minute == null）
   type RawLineup = {
     id: string
     member_id: string
     member_name: string | null
+    position: string | null
     start_minute: number | null
     end_minute: number | null
     members: { name: string; number: number | null } | null
   }
   const toEntry = (l: RawLineup) => ({
     id: l.id,
-    displayName: l.member_name ?? (l.members as { name: string; number: number | null } | null)?.name ?? '',
-    number: (l.members as { name: string; number: number | null } | null)?.number ?? null,
+    displayName: l.member_name ?? l.members?.name ?? '',
+    number: l.members?.number ?? null,
   })
-  const activeLineups = (lineups ?? [] as RawLineup[])
-    .filter((l: RawLineup) => l.start_minute !== null && l.end_minute === null)
+  const allLineups = (lineups ?? []) as RawLineup[]
+  const lineupRows = allLineups
+    .filter(l => l.start_minute !== null)
+    .map(l => ({
+      id: l.id,
+      displayName: l.member_name ?? l.members?.name ?? '',
+      number: l.members?.number ?? null,
+      position: l.position,
+      startMinute: l.start_minute,
+      endMinute: l.end_minute ?? null,
+      isStarter: l.start_minute === 0,
+      minutes: l.end_minute != null ? l.end_minute - (l.start_minute ?? 0) : null,
+    }))
+  const activeLineups = allLineups
+    .filter(l => l.start_minute !== null && l.end_minute === null)
     .map(toEntry)
-  const benchLineups = (lineups ?? [] as RawLineup[])
-    .filter((l: RawLineup) => l.start_minute === null && l.end_minute === null)
+  const benchLineups = allLineups
+    .filter(l => l.start_minute === null && l.end_minute === null)
     .map(toEntry)
 
   async function completeMatch() {
@@ -168,68 +181,15 @@ export default async function MatchDetailPage({ params }: Props) {
         </div>
       )}
 
-      <div className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold text-gray-800 dark:text-gray-100">出場メンバー</h2>
-          {isAdmin && (
-            <Link href={`/matches/${id}/lineup`} className="text-sm text-green-600 dark:text-green-400 hover:underline">
-              メンバーを設定
-            </Link>
-          )}
-        </div>
-        {(() => {
-          const playingLineups = (lineups ?? []).filter(l => l.start_minute !== null)
-          return playingLineups.length > 0 ? (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-gray-500 dark:text-gray-400 border-b dark:border-gray-700">
-                  <th className="pb-2">名前</th>
-                  <th className="pb-2">ポジション</th>
-                  <th className="pb-2">出場時間</th>
-                  <th className="pb-2 text-right">計</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y dark:divide-gray-700">
-                {playingLineups.map(l => {
-                  const m = l.members as { name: string; number: number } | null
-                  const displayName = (l as { member_name?: string | null }).member_name ?? m?.name
-                  const isStarter = l.start_minute === 0
-                  const minutes = l.end_minute != null ? l.end_minute - (l.start_minute ?? 0) : null
-                  return (
-                    <tr key={l.id}>
-                      <td className="py-2 text-gray-900 dark:text-white">
-                        {m?.number && <span className="text-gray-400 dark:text-gray-500 mr-1">#{m.number}</span>}
-                        {displayName}
-                        {isStarter && (
-                          <span className="ml-1.5 text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">先発</span>
-                        )}
-                      </td>
-                      <td className="py-2 text-gray-600 dark:text-gray-400">{l.position ?? '-'}</td>
-                      <td className="py-2 text-gray-600 dark:text-gray-400">
-                        {l.start_minute}分〜{l.end_minute != null ? `${l.end_minute}分` : ''}
-                      </td>
-                      <td className="py-2 text-right font-medium text-gray-700 dark:text-gray-300">
-                        {minutes != null ? `${minutes}分` : '-'}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          ) : (
-            <p className="text-gray-400 dark:text-gray-500 text-sm">出場記録がありません</p>
-          )
-        })()}
-      </div>
-
-      <MatchNote matchId={id} initialNote={(match as { note?: string | null }).note ?? null} isAdmin={isAdmin} />
-
-      <MatchSubstitutionClient
+      <MatchLineupSection
         matchId={id}
+        lineupRows={lineupRows}
         activeLineups={activeLineups}
         benchLineups={benchLineups}
         isAdmin={isAdmin}
       />
+
+      <MatchNote matchId={id} initialNote={(match as { note?: string | null }).note ?? null} isAdmin={isAdmin} />
 
       <MatchEventsClient
         matchId={id}
