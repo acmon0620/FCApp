@@ -89,46 +89,55 @@ export default function MatchEventsClient({
       if (opponentScorer) payload.opponent_scorer = opponentScorer
       if (opponentAssist) payload.opponent_assist = opponentAssist
 
-      const [, { data: inserted }] = await Promise.all([
+      await Promise.all([
         supabase.from('matches').update({ score_them: scoreThem + 1 }).eq('id', matchId),
-        supabase.from('events').insert(payload).select().single(),
+        supabase.from('events').insert(payload),
       ])
 
-      if (inserted) {
-        const ev = inserted as unknown as Event
-        setEvents(prev =>
-          [...prev, ev].sort((a, b) => a.minute - b.minute)
-        )
-      }
-    } else {
-      const { data: inserted } = await supabase
-        .from('events')
-        .insert({
-          match_id: matchId,
-          member_id: eventMember,
-          assisted_by: eventType === 'goal' && assistMember ? assistMember : null,
-          type: eventType,
+      // .select() は RLS の RETURNING ブロックで null になる場合があるため、
+      // 入力値から直接オブジェクトを組み立ててローカル state に追加する
+      setEvents(prev =>
+        [...prev, {
+          id: `temp-${Date.now()}`,
+          type: 'opponent_goal',
           minute: eventMinute,
-        })
-        .select()
-        .single()
+          member_id: null,
+          member_name: null,
+          assisted_by: null,
+          assisted_by_name: null,
+          opponent_scorer: opponentScorer || null,
+          opponent_assist: opponentAssist || null,
+        }].sort((a, b) => a.minute - b.minute)
+      )
+    } else {
+      const m = eventMembers.find(mem => mem.id === eventMember)
+      const a = assistMember ? eventMembers.find(mem => mem.id === assistMember) : null
+
+      await supabase.from('events').insert({
+        match_id: matchId,
+        member_id: eventMember,
+        assisted_by: eventType === 'goal' && assistMember ? assistMember : null,
+        type: eventType,
+        minute: eventMinute,
+      })
 
       if (eventType === 'goal') {
         await supabase.from('matches').update({ score_us: scoreUs + 1 }).eq('id', matchId)
       }
 
-      if (inserted) {
-        const m = eventMembers.find(mem => mem.id === eventMember)
-        const a = assistMember ? eventMembers.find(mem => mem.id === assistMember) : null
-        const ev = inserted as unknown as Event & { member_name?: string | null; assisted_by_name?: string | null }
-        setEvents(prev =>
-          [...prev, {
-            ...ev,
-            member_name: ev.member_name ?? m?.name ?? null,
-            assisted_by_name: ev.assisted_by_name ?? a?.name ?? null,
-          }].sort((a, b) => a.minute - b.minute)
-        )
-      }
+      setEvents(prev =>
+        [...prev, {
+          id: `temp-${Date.now()}`,
+          type: eventType,
+          minute: eventMinute,
+          member_id: eventMember,
+          member_name: m?.name ?? null,
+          assisted_by: (eventType === 'goal' && assistMember) ? assistMember : null,
+          assisted_by_name: a?.name ?? null,
+          opponent_scorer: null,
+          opponent_assist: null,
+        }].sort((a, b) => a.minute - b.minute)
+      )
     }
 
     setShowForm(false)
