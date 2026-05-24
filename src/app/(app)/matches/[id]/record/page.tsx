@@ -16,7 +16,7 @@ type Event = {
   opponent_scorer: string | null
   opponent_assist: string | null
 }
-type Match = { id: string; opponent: string; date: string; score_us: number; score_them: number; duration: number | null }
+type Match = { id: string; opponent: string; date: string; score_us: number; score_them: number; duration: number | null; status: string }
 
 const EVENT_ICON: Record<string, string> = {
   goal: '⚽',
@@ -34,6 +34,7 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
   const [members, setMembers] = useState<Member[]>([])
   const [lineups, setLineups] = useState<Lineup[]>([])
   const [events, setEvents] = useState<Event[]>([])
+  const [completing, setCompleting] = useState(false)
 
   // 追加フォーム
   const [showAddForm, setShowAddForm] = useState(false)
@@ -48,18 +49,14 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
   const [subPosition, setSubPosition] = useState('')
   const [subMinute, setSubMinute] = useState(0)
 
-  // 自チームイベントフォーム
+  // イベントフォーム（自チーム + 相手得点を統合）
   const [showEventForm, setShowEventForm] = useState(false)
-  const [eventType, setEventType] = useState<'goal' | 'yellow_card' | 'red_card'>('goal')
+  const [eventType, setEventType] = useState<'goal' | 'yellow_card' | 'red_card' | 'opponent_goal'>('goal')
   const [eventMember, setEventMember] = useState('')
   const [assistMember, setAssistMember] = useState('')
   const [eventMinute, setEventMinute] = useState(0)
-
-  // 相手得点フォーム
-  const [showOpponentForm, setShowOpponentForm] = useState(false)
   const [opponentScorer, setOpponentScorer] = useState('')
   const [opponentAssist, setOpponentAssist] = useState('')
-  const [opponentMinute, setOpponentMinute] = useState(0)
 
   useEffect(() => {
     loadData()
@@ -148,52 +145,38 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
   }
 
   async function addEvent() {
-    await supabase.from('events').insert({
-      match_id: id,
-      member_id: eventMember,
-      assisted_by: eventType === 'goal' && assistMember ? assistMember : null,
-      type: eventType,
-      minute: eventMinute,
-    })
-    if (eventType === 'goal') {
-      const newScore = events.filter(e => e.type === 'goal').length + 1
-      await supabase.from('matches').update({ score_us: newScore }).eq('id', id)
+    if (eventType === 'opponent_goal') {
+      const newScore = (match?.score_them ?? 0) + 1
+      const payload: Record<string, string | number | null> = {
+        match_id: id,
+        member_id: null,
+        type: 'opponent_goal',
+        minute: eventMinute,
+      }
+      if (opponentScorer) payload.opponent_scorer = opponentScorer
+      if (opponentAssist) payload.opponent_assist = opponentAssist
+      await Promise.all([
+        supabase.from('matches').update({ score_them: newScore }).eq('id', id),
+        supabase.from('events').insert(payload),
+      ])
+    } else {
+      await supabase.from('events').insert({
+        match_id: id,
+        member_id: eventMember,
+        assisted_by: eventType === 'goal' && assistMember ? assistMember : null,
+        type: eventType,
+        minute: eventMinute,
+      })
+      if (eventType === 'goal') {
+        const newScore = events.filter(e => e.type === 'goal').length + 1
+        await supabase.from('matches').update({ score_us: newScore }).eq('id', id)
+      }
     }
     setShowEventForm(false)
     setEventMember('')
     setAssistMember('')
-    await loadData()
-  }
-
-  async function addOpponentGoal() {
-    const newScore = (match?.score_them ?? 0) + 1
-    // opponent_scorer / opponent_assist 列は追加マイグレーションが必要なため、
-    // 値がある場合のみ含める（列未作成環境でも必ずイベントが保存されるよう対処）
-    const eventPayload: Record<string, string | number | null> = {
-      match_id: id,
-      member_id: null,
-      type: 'opponent_goal',
-      minute: opponentMinute,
-    }
-    if (opponentScorer) eventPayload.opponent_scorer = opponentScorer
-    if (opponentAssist) eventPayload.opponent_assist = opponentAssist
-    await Promise.all([
-      supabase.from('matches').update({ score_them: newScore }).eq('id', id),
-      supabase.from('events').insert(eventPayload),
-    ])
-    setShowOpponentForm(false)
     setOpponentScorer('')
     setOpponentAssist('')
-    await loadData()
-  }
-
-  async function undoOpponentGoal() {
-    const newScore = Math.max(0, (match?.score_them ?? 0) - 1)
-    const lastGoal = [...events].reverse().find(e => e.type === 'opponent_goal')
-    await Promise.all([
-      supabase.from('matches').update({ score_them: newScore }).eq('id', id),
-      lastGoal ? supabase.from('events').delete().eq('id', lastGoal.id) : Promise.resolve(),
-    ])
     await loadData()
   }
 
@@ -205,6 +188,12 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
       await supabase.from('matches').update({ score_them: Math.max(0, (match?.score_them ?? 0) - 1) }).eq('id', id)
     }
     await loadData()
+  }
+
+  async function completeMatch() {
+    setCompleting(true)
+    await supabase.from('matches').update({ status: 'finished' }).eq('id', id)
+    router.push(`/matches/${id}`)
   }
 
   if (!match) return <div className="text-gray-500 dark:text-gray-400">読み込み中...</div>
@@ -261,76 +250,8 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
           <div className="text-center flex-1">
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">相手</p>
             <p className="text-4xl font-bold text-gray-900 dark:text-white">{match.score_them}</p>
-            <div className="flex gap-1 mt-1 justify-center">
-              <button
-                onClick={undoOpponentGoal}
-                className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-              >
-                -
-              </button>
-              <button
-                onClick={() => { setOpponentMinute(0); setShowOpponentForm(true) }}
-                className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded hover:bg-red-200 font-medium"
-              >
-                + 得点
-              </button>
-            </div>
           </div>
         </div>
-
-        {/* 相手得点フォーム */}
-        {showOpponentForm && (
-          <div className="mt-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 space-y-2">
-            <p className="text-sm font-medium text-red-800 dark:text-red-300">相手の得点を記録</p>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="text-xs text-gray-500 dark:text-gray-400 block mb-0.5">得点者 背番号</label>
-                <input
-                  type="text"
-                  value={opponentScorer}
-                  onChange={e => setOpponentScorer(e.target.value)}
-                  placeholder="例：10"
-                  className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 text-sm dark:bg-gray-800 dark:text-gray-100"
-                />
-              </div>
-              <div>
-                <label className="text-xs text-gray-500 dark:text-gray-400 block mb-0.5">アシスト 背番号</label>
-                <input
-                  type="text"
-                  value={opponentAssist}
-                  onChange={e => setOpponentAssist(e.target.value)}
-                  placeholder="例：7"
-                  className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 text-sm dark:bg-gray-800 dark:text-gray-100"
-                />
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <label className="text-xs text-gray-500 dark:text-gray-400">時間</label>
-              <input
-                type="number"
-                value={opponentMinute}
-                onChange={e => setOpponentMinute(Number(e.target.value))}
-                className="w-16 border border-gray-200 dark:border-gray-600 rounded px-2 py-1 text-sm dark:bg-gray-800 dark:text-gray-100"
-                min={0}
-              />
-              <span className="text-xs text-gray-500 dark:text-gray-400">分</span>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowOpponentForm(false)}
-                className="flex-1 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 py-1.5 rounded text-sm"
-              >
-                キャンセル
-              </button>
-              <button
-                onClick={addOpponentGoal}
-                className="flex-1 bg-red-600 text-white py-1.5 rounded text-sm font-medium"
-              >
-                記録する
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* フィールド上のメンバー */}
@@ -501,41 +422,72 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
 
         {showEventForm && (
           <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 mb-3 space-y-2">
-            <div className="flex gap-2">
-              {(['goal', 'yellow_card', 'red_card'] as const).map(t => (
+            <div className="grid grid-cols-2 gap-2">
+              {(['goal', 'yellow_card', 'red_card', 'opponent_goal'] as const).map(t => (
                 <button
                   key={t}
                   onClick={() => setEventType(t)}
-                  className={`flex-1 py-1.5 rounded text-sm border ${
-                    eventType === t ? 'border-green-600 bg-green-50 text-green-700' : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400'
+                  className={`py-1.5 rounded text-sm border ${
+                    eventType === t
+                      ? 'border-green-600 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300'
+                      : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400'
                   }`}
                 >
-                  {EVENT_ICON[t]} {t === 'goal' ? '得点' : t === 'yellow_card' ? '警告' : '退場'}
+                  {EVENT_ICON[t]} {t === 'goal' ? '自チーム得点' : t === 'yellow_card' ? '警告' : t === 'red_card' ? '退場' : '相手得点'}
                 </button>
               ))}
             </div>
-            <select
-              value={eventMember}
-              onChange={e => setEventMember(e.target.value)}
-              className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 text-sm dark:bg-gray-800 dark:text-gray-100"
-            >
-              <option value="">選手を選択</option>
-              {eventMembers.map(m => (
-                <option key={m.id} value={m.id}>{memberLabel(m)}</option>
-              ))}
-            </select>
-            {eventType === 'goal' && (
-              <select
-                value={assistMember}
-                onChange={e => setAssistMember(e.target.value)}
-                className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 text-sm dark:bg-gray-800 dark:text-gray-100"
-              >
-                <option value="">アシスト選手（なければスキップ）</option>
-                {eventMembers.filter(m => m.id !== eventMember).map(m => (
-                  <option key={m.id} value={m.id}>{memberLabel(m)}</option>
-                ))}
-              </select>
+
+            {eventType === 'opponent_goal' ? (
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs text-gray-500 dark:text-gray-400 block mb-0.5">得点者 背番号</label>
+                  <input
+                    type="text"
+                    value={opponentScorer}
+                    onChange={e => setOpponentScorer(e.target.value)}
+                    placeholder="例：10"
+                    className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 text-sm dark:bg-gray-800 dark:text-gray-100"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 dark:text-gray-400 block mb-0.5">アシスト 背番号</label>
+                  <input
+                    type="text"
+                    value={opponentAssist}
+                    onChange={e => setOpponentAssist(e.target.value)}
+                    placeholder="例：7"
+                    className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 text-sm dark:bg-gray-800 dark:text-gray-100"
+                  />
+                </div>
+              </div>
+            ) : (
+              <>
+                <select
+                  value={eventMember}
+                  onChange={e => setEventMember(e.target.value)}
+                  className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 text-sm dark:bg-gray-800 dark:text-gray-100"
+                >
+                  <option value="">選手を選択</option>
+                  {eventMembers.map(m => (
+                    <option key={m.id} value={m.id}>{memberLabel(m)}</option>
+                  ))}
+                </select>
+                {eventType === 'goal' && (
+                  <select
+                    value={assistMember}
+                    onChange={e => setAssistMember(e.target.value)}
+                    className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 text-sm dark:bg-gray-800 dark:text-gray-100"
+                  >
+                    <option value="">アシスト選手（なければスキップ）</option>
+                    {eventMembers.filter(m => m.id !== eventMember).map(m => (
+                      <option key={m.id} value={m.id}>{memberLabel(m)}</option>
+                    ))}
+                  </select>
+                )}
+              </>
             )}
+
             <div className="flex items-center gap-2">
               <label className="text-xs text-gray-500 dark:text-gray-400">時間</label>
               <input
@@ -548,8 +500,19 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
               <span className="text-xs text-gray-500 dark:text-gray-400">分</span>
             </div>
             <div className="flex gap-2">
-              <button onClick={() => setShowEventForm(false)} className="flex-1 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 py-1.5 rounded text-sm">キャンセル</button>
-              <button onClick={addEvent} disabled={!eventMember} className="flex-1 bg-green-600 text-white py-1.5 rounded text-sm disabled:opacity-50">記録</button>
+              <button
+                onClick={() => setShowEventForm(false)}
+                className="flex-1 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 py-1.5 rounded text-sm"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={addEvent}
+                disabled={eventType !== 'opponent_goal' && !eventMember}
+                className="flex-1 bg-green-600 text-white py-1.5 rounded text-sm disabled:opacity-50"
+              >
+                記録
+              </button>
             </div>
           </div>
         )}
@@ -594,6 +557,17 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
         ) : (
           <p className="text-gray-400 dark:text-gray-500 text-sm">イベント記録がありません</p>
         )}
+      </div>
+
+      {/* 記録完了 */}
+      <div className="pb-8">
+        <button
+          onClick={completeMatch}
+          disabled={completing}
+          className="w-full bg-green-600 text-white py-3 rounded-xl text-sm font-semibold hover:bg-green-700 disabled:opacity-50 transition-colors"
+        >
+          {completing ? '完了中...' : '記録を完了する'}
+        </button>
       </div>
     </div>
   )
