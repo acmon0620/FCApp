@@ -167,16 +167,19 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
 
   async function addOpponentGoal() {
     const newScore = (match?.score_them ?? 0) + 1
+    // opponent_scorer / opponent_assist 列は追加マイグレーションが必要なため、
+    // 値がある場合のみ含める（列未作成環境でも必ずイベントが保存されるよう対処）
+    const eventPayload: Record<string, string | number | null> = {
+      match_id: id,
+      member_id: null,
+      type: 'opponent_goal',
+      minute: opponentMinute,
+    }
+    if (opponentScorer) eventPayload.opponent_scorer = opponentScorer
+    if (opponentAssist) eventPayload.opponent_assist = opponentAssist
     await Promise.all([
       supabase.from('matches').update({ score_them: newScore }).eq('id', id),
-      supabase.from('events').insert({
-        match_id: id,
-        member_id: null,
-        type: 'opponent_goal',
-        minute: opponentMinute,
-        opponent_scorer: opponentScorer || null,
-        opponent_assist: opponentAssist || null,
-      }),
+      supabase.from('events').insert(eventPayload),
     ])
     setShowOpponentForm(false)
     setOpponentScorer('')

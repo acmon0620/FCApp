@@ -413,6 +413,10 @@ ALTER TABLE matches ADD COLUMN IF NOT EXISTS shirt_color text NOT NULL DEFAULT '
 
 -- 試合コメント（最大300文字）
 ALTER TABLE matches ADD COLUMN IF NOT EXISTS note text;
+
+-- 相手得点者・アシスト記録（events テーブルに列がない場合は追加）
+ALTER TABLE events ADD COLUMN IF NOT EXISTS opponent_scorer text;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS opponent_assist text;
 ```
 
 ### 4. 開発サーバーの起動
