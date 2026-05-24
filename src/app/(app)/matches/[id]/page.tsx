@@ -5,6 +5,7 @@ import { TAG_COLOR } from '@/lib/matchTags'
 import FormationField from '@/components/FormationField'
 import FormationEditor from '@/components/FormationEditor'
 import { getCurrentMember } from '@/lib/auth'
+import MatchNote from './MatchNote'
 
 type Props = { params: Promise<{ id: string }> }
 
@@ -173,6 +174,8 @@ export default async function MatchDetailPage({ params }: Props) {
           )
         })()}
       </div>
+
+      <MatchNote matchId={id} initialNote={(match as { note?: string | null }).note ?? null} isAdmin={isAdmin} />
 
       <div className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm">
         <h2 className="font-semibold text-gray-800 dark:text-gray-100 mb-3">イベント</h2>

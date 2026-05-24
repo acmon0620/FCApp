@@ -410,6 +410,9 @@ ALTER TABLE events  ADD COLUMN IF NOT EXISTS assisted_by_name text;
 
 -- ユニフォームカラー（試合ごとに白/青/赤を選択）
 ALTER TABLE matches ADD COLUMN IF NOT EXISTS shirt_color text NOT NULL DEFAULT 'white';
+
+-- 試合コメント（最大300文字）
+ALTER TABLE matches ADD COLUMN IF NOT EXISTS note text;
 ```
 
 ### 4. 開発サーバーの起動

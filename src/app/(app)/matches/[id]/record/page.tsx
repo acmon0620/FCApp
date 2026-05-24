@@ -233,12 +233,12 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
           >
             メンバー設定
           </Link>
-          <button
-            onClick={() => router.back()}
+          <Link
+            href={`/matches/${id}`}
             className="border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
           >
             戻る
-          </button>
+          </Link>
         </div>
       </div>
 
