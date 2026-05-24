@@ -26,6 +26,7 @@ type Props = {
   eventMembers: Member[]
   memberNameById: Record<string, string>
   isAdmin: boolean
+  opponentName: string
 }
 
 const EVENT_ICON: Record<string, string> = {
@@ -36,7 +37,7 @@ const EVENT_ICON: Record<string, string> = {
 }
 
 export default function MatchEventsClient({
-  matchId, scoreUs, scoreThem, initialEvents, eventMembers, memberNameById, isAdmin,
+  matchId, scoreUs, scoreThem, initialEvents, eventMembers, memberNameById, isAdmin, opponentName,
 }: Props) {
   const router = useRouter()
   const supabase = createClient()
@@ -287,7 +288,7 @@ export default function MatchEventsClient({
                 <span className="text-gray-500 dark:text-gray-400 w-10">{ev.minute}&apos;</span>
                 {isOpponent ? (
                   <span className="text-red-600 font-medium">
-                    相手{ev.opponent_scorer ? ` #${ev.opponent_scorer}` : ''}
+                    {opponentName}{ev.opponent_scorer ? ` #${ev.opponent_scorer}` : ''}
                     {ev.opponent_assist && (
                       <span className="text-gray-500 dark:text-gray-400 font-normal">（アシスト: #{ev.opponent_assist}）</span>
                     )}

@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { revalidatePath } from 'next/cache'
 import Link from 'next/link'
 import { TAG_COLOR } from '@/lib/matchTags'
 import FormationField from '@/components/FormationField'
@@ -61,6 +62,15 @@ export default async function MatchDetailPage({ params }: Props) {
     : (allMembers ?? [])) as { id: string; name: string; number: number | null }[]
 
   const isAdmin = member.role === 'admin'
+  const teamName = member.teams?.name ?? 'チーム'
+
+  async function completeMatch() {
+    'use server'
+    const supabase = await createClient()
+    await supabase.from('matches').update({ status: 'finished' }).eq('id', id)
+    revalidatePath(`/matches/${id}`)
+    revalidatePath('/matches')
+  }
 
   const starters = (lineups ?? []).filter(l => l.start_minute === 0)
   const formationPlayers = starters
@@ -108,8 +118,23 @@ export default async function MatchDetailPage({ params }: Props) {
         <p className="text-5xl font-bold text-gray-900 dark:text-white">
           {match.score_us} <span className="text-gray-300 dark:text-gray-600">-</span> {match.score_them}
         </p>
-        <p className="text-gray-500 dark:text-gray-400 mt-1">自チーム · 相手</p>
+        <p className="text-gray-500 dark:text-gray-400 mt-1">{teamName} · {match.opponent}</p>
       </div>
+
+      {isAdmin && (
+        match.status !== 'finished' ? (
+          <form action={completeMatch}>
+            <button
+              type="submit"
+              className="w-full bg-green-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+            >
+              記録完了
+            </button>
+          </form>
+        ) : (
+          <p className="text-center text-sm text-gray-400 dark:text-gray-500">試合終了として記録済み</p>
+        )
+      )}
 
       {formationPlayers.length > 0 && (
         <div className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm">
@@ -185,6 +210,7 @@ export default async function MatchDetailPage({ params }: Props) {
         eventMembers={eventMembers}
         memberNameById={memberNameById}
         isAdmin={isAdmin}
+        opponentName={match.opponent}
       />
     </div>
   )

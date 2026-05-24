@@ -86,25 +86,19 @@
 - 保存時：先発は `lineups.start_minute=0`、ベンチは `lineups.start_minute=null` として登録
 - ベンチ登録された選手が試合記録で交代出場した場合、既存エントリを更新して出場時間を設定
 
-#### 試合記録
-- **スコア表示**：スコアと試合時間（`duration`）をリアルタイム表示
-- **イベント記録**：4種のイベントタイプをイベント欄から統一して記録
-  - 自チーム得点⚽：選手・アシスト・時間を記録（選手選択は参加メンバーに限定）
-  - 警告🟨 / 退場🟥：選手・時間を記録
-  - 相手得点⚽：得点者・アシストの背番号（任意）・時間を記録。スコアに自動反映
-- **イベント削除**：× ボタンでイベント個別削除（スコアも自動調整）
-- **選手交代**：IN候補はベンチ登録済みの選手を優先表示。OUT選手の終了時間とIN選手の開始時間をセットで記録
-- **記録を完了する**：ボタンを押すと `status='finished'` に更新し試合詳細画面へ遷移。完了後も詳細画面の「記録する」から再度編集可能
-- **メンバー設定へのリンク**：記録画面から常時アクセス可能
-- 記録操作後に即時UI反映（`loadData()` を各ミューテーション後に呼び出し）
-
 #### 試合詳細
-- スコア表示
+- **スコア表示**：`チーム名 · 対戦相手名` のラベル付きでスコアを表示
 - 試合時間（`duration`）を設定済みの場合はヘッダーに表示
 - フォーメーション表示：Tシャツ形のトークン（試合ごとのユニフォームカラーを反映）＋選手名
 - 出場メンバー一覧：先発バッジ / ポジション / 出場時間（例：0分〜45分）/ 計X分
-- イベント一覧：時系列で得点・アシスト・カード・相手得点を表示
+- **イベント記録**（管理者のみ）：4種のイベントタイプをインラインフォームから記録
+  - 自チーム得点⚽：選手・アシスト・時間を記録（参加メンバーに限定）
+  - 警告🟨 / 退場🟥：選手・時間を記録
+  - 相手得点⚽：対戦相手チーム名付きで表示。得点者・アシストの背番号（任意）・時間を記録。スコアに自動反映
+- **イベント削除**：管理者は × ボタンでイベントを個別削除（スコアも自動調整）
+- イベント追加後は楽観的UIで即時反映。`router.refresh()` でサーバーデータと同期
 - 選手名・アシスト名は記録時点のスナップショットを表示（名前変更後も正確に表示）
+- **記録完了**（管理者のみ）：スコアカード直下に表示。押すと `status='finished'` に更新し試合一覧にスコア・勝敗が反映される。完了後も詳細画面での編集・イベント追加は引き続き可能
 
 ### ランキング
 6カテゴリのランキングをタブ切り替えで表示：
@@ -184,6 +178,9 @@
 |----------|------|------|
 | `(app)/layout.tsx` | Server | 認証チェック・MobileHeader・サイドバー・BottomNav描画 |
 | `admin/layout.tsx` | Server | 管理セクション共通レイアウト・タブバー |
+| `matches/[id]/page.tsx` | Server | 試合詳細・記録完了ボタン（Server Action） |
+| `matches/[id]/MatchEventsClient.tsx` | Client | イベント追加・削除・楽観的UI |
+| `matches/[id]/MatchNote.tsx` | Client | 試合メモのインライン編集 |
 | `matches/[id]/edit/page.tsx` | Server | データ取得・権限チェック |
 | `matches/[id]/edit/EditForm.tsx` | Client | フォーム状態管理・保存/削除操作 |
 | `matches/[id]/lineup/page.tsx` | Server | 試合・メンバー・ラインナップ並列取得 |
@@ -316,9 +313,11 @@ src/
 │   │   ├── dashboard/
 │   │   ├── matches/
 │   │   │   ├── [id]/
-│   │   │   │   ├── edit/       # EditForm.tsx (Client)
-│   │   │   │   ├── lineup/     # LineupClient.tsx (Client)
-│   │   │   │   └── record/
+│   │   │   │   ├── page.tsx             # 試合詳細・記録完了 (Server)
+│   │   │   │   ├── MatchEventsClient.tsx # イベント記録UI (Client)
+│   │   │   │   ├── MatchNote.tsx         # メモ編集 (Client)
+│   │   │   │   ├── edit/                # EditForm.tsx (Client)
+│   │   │   │   └── lineup/              # LineupClient.tsx (Client)
 │   │   │   └── new/
 │   │   ├── members/
 │   │   │   └── [id]/           # MemberStats.tsx (Client, Recharts)
@@ -418,6 +417,11 @@ ALTER TABLE matches ADD COLUMN IF NOT EXISTS note text;
 -- 相手得点者・アシスト記録（events テーブルに列がない場合は追加）
 ALTER TABLE events ADD COLUMN IF NOT EXISTS opponent_scorer text;
 ALTER TABLE events ADD COLUMN IF NOT EXISTS opponent_assist text;
+
+-- イベントタイプの CHECK 制約に opponent_goal を追加
+ALTER TABLE events DROP CONSTRAINT IF EXISTS events_type_check;
+ALTER TABLE events ADD CONSTRAINT events_type_check
+  CHECK (type IN ('goal', 'yellow_card', 'red_card', 'opponent_goal'));
 ```
 
 ### 4. 開発サーバーの起動
