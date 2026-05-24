@@ -101,6 +101,12 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
     await loadData()
   }
 
+  async function revertToInProgress() {
+    await supabase.from('matches').update({ status: 'in_progress' }).eq('id', id)
+    await supabase.from('lineups').update({ end_minute: null }).eq('match_id', id)
+    await loadData()
+  }
+
   async function finishMatch() {
     const scoreUs = events.filter(e => e.type === 'goal').length
     // start_minute が null のベンチ選手は出場扱いにしない
@@ -172,14 +178,10 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
   }
 
   async function addEvent() {
-    const scorer = members.find(m => m.id === eventMember)
-    const assister = assistMember ? members.find(m => m.id === assistMember) : null
     await supabase.from('events').insert({
       match_id: id,
       member_id: eventMember,
-      member_name: scorer?.name ?? null,
       assisted_by: eventType === 'goal' && assistMember ? assistMember : null,
-      assisted_by_name: eventType === 'goal' && assister ? assister.name : null,
       type: eventType,
       minute: eventMinute,
     })
@@ -275,9 +277,14 @@ export default function MatchRecordPage({ params }: { params: Promise<{ id: stri
             </button>
           )}
           {match.status === 'finished' && (
-            <button onClick={() => router.back()} className="border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800">
-              戻る
-            </button>
+            <>
+              <button onClick={revertToInProgress} className="border border-orange-400 text-orange-600 dark:text-orange-400 px-4 py-2 rounded-lg text-sm font-medium hover:bg-orange-50 dark:hover:bg-orange-900/20">
+                試合中に戻す
+              </button>
+              <button onClick={() => router.back()} className="border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800">
+                戻る
+              </button>
+            </>
           )}
         </div>
       </div>
