@@ -116,6 +116,23 @@ export default async function MatchDetailPage({ params }: Props) {
     revalidatePath('/matches')
   }
 
+  async function applyEndMinutes() {
+    'use server'
+    if (matchDuration == null) return
+    const supabase = await createClient()
+    await supabase.from('lineups')
+      .update({ end_minute: matchDuration })
+      .eq('match_id', id)
+      .not('start_minute', 'is', null)
+      .is('end_minute', null)
+    revalidatePath(`/matches/${id}`)
+  }
+
+  // end_minute 未記録の出場選手がいるか
+  const hasUnrecordedEndMinute = (lineups ?? []).some(
+    l => l.start_minute !== null && l.end_minute === null
+  )
+
   const starters = (lineups ?? []).filter(l => l.start_minute === 0)
   const formationPlayers = starters
     .filter(l => l.field_x != null && l.field_y != null)
@@ -176,7 +193,19 @@ export default async function MatchDetailPage({ params }: Props) {
             </button>
           </form>
         ) : (
-          <p className="text-center text-sm text-gray-400 dark:text-gray-500">試合終了として記録済み</p>
+          <div className="text-center space-y-2">
+            <p className="text-sm text-gray-400 dark:text-gray-500">試合終了として記録済み</p>
+            {matchDuration != null && hasUnrecordedEndMinute && (
+              <form action={applyEndMinutes}>
+                <button
+                  type="submit"
+                  className="text-sm text-green-600 dark:text-green-400 hover:underline"
+                >
+                  出場時間を一括記録（{matchDuration}分）
+                </button>
+              </form>
+            )}
+          </div>
         )
       )}
 
