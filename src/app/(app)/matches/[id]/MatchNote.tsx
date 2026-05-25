@@ -18,11 +18,19 @@ export default function MatchNote({ matchId, initialNote, isAdmin }: Props) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(initialNote ?? '')
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   async function saveNote() {
     setSaving(true)
+    setSaveError(null)
     const supabase = createClient()
-    await supabase.from('matches').update({ note: draft.trim() || null }).eq('id', matchId)
+    const { error } = await supabase.from('matches').update({ note: draft.trim() || null }).eq('id', matchId)
+    if (error) {
+      console.error('[MatchNote] save failed:', error)
+      setSaveError(`保存に失敗しました: ${error.message}`)
+      setSaving(false)
+      return
+    }
     setNote(draft.trim())
     setEditing(false)
     setSaving(false)
@@ -61,6 +69,9 @@ export default function MatchNote({ matchId, initialNote, isAdmin }: Props) {
             className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:bg-gray-800 dark:text-gray-100 resize-none focus:outline-none focus:ring-2 focus:ring-green-500"
             autoFocus
           />
+          {saveError && (
+            <p className="text-xs text-red-500">{saveError}</p>
+          )}
           <div className="flex items-center justify-between">
             <span className={`text-xs ${draft.length >= MAX ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'}`}>
               {draft.length}/{MAX}
