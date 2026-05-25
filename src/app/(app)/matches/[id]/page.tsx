@@ -99,10 +99,19 @@ export default async function MatchDetailPage({ params }: Props) {
     .filter(l => l.start_minute === null && l.end_minute === null)
     .map(toEntry)
 
+  const matchDuration: number | null = match.duration ?? null
+
   async function completeMatch() {
     'use server'
     const supabase = await createClient()
     await supabase.from('matches').update({ status: 'finished' }).eq('id', id)
+    if (matchDuration != null) {
+      await supabase.from('lineups')
+        .update({ end_minute: matchDuration })
+        .eq('match_id', id)
+        .not('start_minute', 'is', null)
+        .is('end_minute', null)
+    }
     revalidatePath(`/matches/${id}`)
     revalidatePath('/matches')
   }
