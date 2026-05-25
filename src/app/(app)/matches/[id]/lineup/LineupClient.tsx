@@ -87,7 +87,7 @@ export default function LineupClient({ id, matchOpponent, members, initialStarte
 
     // 既存の先発（start_minute=0）とベンチ（start_minute=null）を削除（交代記録は残す）
     await Promise.all([
-      supabase.from('lineups').delete().eq('match_id', id).eq('start_minute', 0).is('end_minute', null),
+      supabase.from('lineups').delete().eq('match_id', id).eq('start_minute', 0),
       supabase.from('lineups').delete().eq('match_id', id).is('start_minute', null).is('end_minute', null),
     ])
 

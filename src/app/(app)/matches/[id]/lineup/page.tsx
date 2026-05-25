@@ -37,17 +37,20 @@ export default async function LineupPage({ params }: Props) {
       .order('number', { ascending: true, nullsFirst: false }),
     supabase
       .from('lineups')
-      .select('member_id, position, field_x, field_y, start_minute')
-      .eq('match_id', id)
-      .is('end_minute', null),
+      .select('member_id, position, field_x, field_y, start_minute, end_minute')
+      .eq('match_id', id),
   ])
 
   if (!matchRes.data) redirect('/matches')
 
-  // start_minute=0: 先発, start_minute=null: ベンチ, start_minute>0: 交代選手（除外）
+  // start_minute=0: 先発（end_minute は記録完了後に設定される場合あり）
+  // start_minute=null, end_minute=null: ベンチ
+  // start_minute>0: 交代出場選手（除外）
   const allEntries = lineupsRes.data ?? []
   const starterEntries = allEntries.filter(l => l.start_minute === 0)
-  const participantEntries = allEntries.filter(l => l.start_minute === 0 || l.start_minute === null)
+  const participantEntries = allEntries.filter(
+    l => l.start_minute === 0 || (l.start_minute === null && l.end_minute === null)
+  )
 
   const initialStarters = starterEntries.map((l, i) => ({
     memberId: l.member_id,
