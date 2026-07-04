@@ -114,6 +114,17 @@ CREATE TABLE IF NOT EXISTS member_groups (
 - スタメン設定画面（`/matches/[id]/lineup`）でもグループ絞り込みが可能
 - `members.number` カラムは廃止予定（DBには残存）。背番号は必ず `member_groups.jersey_number` を参照すること
 
+### オウンゴール記録
+`MatchEventsClient`（`src/app/(app)/matches/[id]/MatchEventsClient.tsx`）でのイベント記録UI。
+- オウンゴールは独立したボタンではなく「自チーム得点」フロー内のチェックボックスとして実装
+- 「自チーム得点」選択 → 選手選択後に「オウンゴール（相手チームに+1点）」チェックボックスが表示
+- チェック時: アシスト選択を非表示にし、DB には `type = 'own_goal'`・`member_id` あり・`score_them` +1 で記録
+- 非チェック時: 通常の自チーム得点（`type = 'goal'`・`score_us` +1）
+
+### 試合種別タグの動的補完
+- 新規試合作成（`/matches/new`）: `useEffect` でチームの既存タグを取得し datalist に追加
+- 試合編集（`/matches/[id]/edit`）: サーバー側で既存タグを取得し `EditForm` に `tagSuggestions` として渡す
+
 ---
 
 ## Tailwind CSS v4 の注意点

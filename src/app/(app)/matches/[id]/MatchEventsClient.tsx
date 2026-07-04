@@ -52,7 +52,8 @@ export default function MatchEventsClient({
   }, [initialEvents])
 
   const [showForm, setShowForm] = useState(false)
-  const [eventType, setEventType] = useState<'goal' | 'yellow_card' | 'red_card' | 'opponent_goal' | 'own_goal'>('goal')
+  const [eventType, setEventType] = useState<'goal' | 'yellow_card' | 'red_card' | 'opponent_goal'>('goal')
+  const [isOwnGoal, setIsOwnGoal] = useState(false)
   const [eventMember, setEventMember] = useState('')
   const [assistMember, setAssistMember] = useState('')
   const [eventMinute, setEventMinute] = useState(0)
@@ -75,6 +76,7 @@ export default function MatchEventsClient({
     setOpponentScorer('')
     setOpponentAssist('')
     setEventType('goal')
+    setIsOwnGoal(false)
     setShowForm(true)
   }
 
@@ -112,7 +114,7 @@ export default function MatchEventsClient({
           }].sort((a, b) => a.minute - b.minute)
         )
       }
-    } else if (eventType === 'own_goal') {
+    } else if (eventType === 'goal' && isOwnGoal) {
       const m = eventMembers.find(mem => mem.id === eventMember)
 
       const [, { error: insertError }] = await Promise.all([
@@ -210,17 +212,16 @@ export default function MatchEventsClient({
 
       {showForm && (
         <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 mb-4 space-y-2">
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {([
               ['goal', '自チーム得点'],
               ['opponent_goal', '相手得点'],
-              ['own_goal', 'オウンゴール'],
               ['yellow_card', '警告'],
               ['red_card', '退場'],
             ] as const).map(([t, label]) => (
               <button
                 key={t}
-                onClick={() => setEventType(t)}
+                onClick={() => { setEventType(t); setIsOwnGoal(false) }}
                 className={`py-1.5 rounded text-sm border ${
                   eventType === t
                     ? 'border-green-600 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300'
@@ -268,19 +269,28 @@ export default function MatchEventsClient({
                 ))}
               </select>
               {eventType === 'goal' && (
-                <select
-                  value={assistMember}
-                  onChange={e => setAssistMember(e.target.value)}
-                  className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 text-sm dark:bg-gray-800 dark:text-gray-100"
-                >
-                  <option value="">アシスト選手（なければスキップ）</option>
-                  {eventMembers.filter(m => m.id !== eventMember).map(m => (
-                    <option key={m.id} value={m.id}>{memberLabel(m)}</option>
-                  ))}
-                </select>
-              )}
-              {eventType === 'own_goal' && (
-                <p className="text-xs text-orange-500 dark:text-orange-400">オウンゴールを記録します（相手チームに+1点）</p>
+                <>
+                  <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={isOwnGoal}
+                      onChange={e => { setIsOwnGoal(e.target.checked); setAssistMember('') }}
+                    />
+                    オウンゴール（相手チームに+1点）
+                  </label>
+                  {!isOwnGoal && (
+                    <select
+                      value={assistMember}
+                      onChange={e => setAssistMember(e.target.value)}
+                      className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 text-sm dark:bg-gray-800 dark:text-gray-100"
+                    >
+                      <option value="">アシスト選手（なければスキップ）</option>
+                      {eventMembers.filter(m => m.id !== eventMember).map(m => (
+                        <option key={m.id} value={m.id}>{memberLabel(m)}</option>
+                      ))}
+                    </select>
+                  )}
+                </>
               )}
             </>
           )}
