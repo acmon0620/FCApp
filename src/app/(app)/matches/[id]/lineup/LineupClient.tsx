@@ -1,12 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import FormationField, { ShirtColor } from '@/components/FormationField'
 
-type Member = { id: string; name: string; number: number | null; position: string | null }
+type Member = { id: string; name: string; position: string | null }
+type Group = { id: string; name: string; sort_order: number }
+type MemberGroupEntry = { memberId: string; groupId: string; jerseyNumber: number | null }
 type StarterEntry = { memberId: string; position: string; fieldX: number; fieldY: number }
 type Tab = 'participant' | 'starter' | 'bench' | 'formation'
 
@@ -31,18 +33,44 @@ type Props = {
   id: string
   matchOpponent: string
   members: Member[]
+  groups: Group[]
+  memberGroups: MemberGroupEntry[]
   initialStarters: StarterEntry[]
   initialParticipantIds: string[]
   shirtColor: ShirtColor
 }
 
-export default function LineupClient({ id, matchOpponent, members, initialStarters, initialParticipantIds, shirtColor }: Props) {
+export default function LineupClient({
+  id, matchOpponent, members, groups, memberGroups, initialStarters, initialParticipantIds, shirtColor,
+}: Props) {
   const router = useRouter()
   const [participants, setParticipants] = useState<Set<string>>(new Set(initialParticipantIds))
   const [starters, setStarters] = useState<StarterEntry[]>(initialStarters)
   const [tab, setTab] = useState<Tab>('participant')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [selectedGroupId, setSelectedGroupId] = useState<string>('')
+
+  // 選択グループの背番号ルックアップ
+  const jerseyLookup = useMemo<Record<string, number | null>>(() => {
+    if (!selectedGroupId) return {}
+    return Object.fromEntries(
+      memberGroups
+        .filter(mg => mg.groupId === selectedGroupId)
+        .map(mg => [mg.memberId, mg.jerseyNumber])
+    )
+  }, [memberGroups, selectedGroupId])
+
+  // グループ選択時: そのグループのメンバーのみ表示（未選択時: 全員）
+  const visibleMembers = useMemo(() => {
+    if (!selectedGroupId) return members
+    const ids = new Set(
+      memberGroups.filter(mg => mg.groupId === selectedGroupId).map(mg => mg.memberId)
+    )
+    return members.filter(m => ids.has(m.id))
+  }, [members, memberGroups, selectedGroupId])
+
+  const numberOf = (memberId: string) => jerseyLookup[memberId] ?? null
 
   function toggleParticipant(member: Member) {
     setParticipants(prev => {
@@ -85,56 +113,32 @@ export default function LineupClient({ id, matchOpponent, members, initialStarte
     setSaving(true)
     const supabase = createClient()
 
-    // 既存の先発（start_minute=0）とベンチ（start_minute=null）を削除（交代記録は残す）
     await Promise.all([
       supabase.from('lineups').delete().eq('match_id', id).eq('start_minute', 0),
       supabase.from('lineups').delete().eq('match_id', id).is('start_minute', null).is('end_minute', null),
     ])
 
     const starterIds = new Set(starters.map(s => s.memberId))
-
     const rows: Array<{
-      match_id: string
-      member_id: string
-      member_name: string | null
-      position: string | null
-      start_minute: number | null
-      field_x: number | null
-      field_y: number | null
+      match_id: string; member_id: string; member_name: string | null
+      position: string | null; start_minute: number | null; field_x: number | null; field_y: number | null
     }> = []
 
     for (const s of starters) {
       const member = members.find(m => m.id === s.memberId)
-      rows.push({
-        match_id: id,
-        member_id: s.memberId,
-        member_name: member?.name ?? null,
-        position: s.position || null,
-        start_minute: 0,
-        field_x: s.fieldX,
-        field_y: s.fieldY,
-      })
+      rows.push({ match_id: id, member_id: s.memberId, member_name: member?.name ?? null,
+        position: s.position || null, start_minute: 0, field_x: s.fieldX, field_y: s.fieldY })
     }
 
-    // ベンチ（参加者で先発でない）は start_minute: null で登録
     for (const memberId of participants) {
       if (!starterIds.has(memberId)) {
         const member = members.find(m => m.id === memberId)
-        rows.push({
-          match_id: id,
-          member_id: memberId,
-          member_name: member?.name ?? null,
-          position: null,
-          start_minute: null,
-          field_x: null,
-          field_y: null,
-        })
+        rows.push({ match_id: id, member_id: memberId, member_name: member?.name ?? null,
+          position: null, start_minute: null, field_x: null, field_y: null })
       }
     }
 
-    if (rows.length > 0) {
-      await supabase.from('lineups').insert(rows)
-    }
+    if (rows.length > 0) await supabase.from('lineups').insert(rows)
 
     setSaving(false)
     setSaved(true)
@@ -142,13 +146,18 @@ export default function LineupClient({ id, matchOpponent, members, initialStarte
   }
 
   const starterIds = new Set(starters.map(s => s.memberId))
-  const benchMembers = members.filter(m => participants.has(m.id) && !starterIds.has(m.id))
+  const benchMembers = visibleMembers.filter(m => participants.has(m.id) && !starterIds.has(m.id))
   const remaining = STARTER_LIMIT - starters.length
 
   const tabClass = (t: Tab) =>
     `flex-1 py-2.5 text-xs font-medium transition-colors ${
       tab === t ? 'bg-green-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
     }`
+
+  const memberLabel = (m: Member) => {
+    const n = numberOf(m.id)
+    return <span>{n != null && <span className="text-gray-400 dark:text-gray-500 mr-1">#{n}</span>}{m.name}</span>
+  }
 
   return (
     <div className="space-y-5 max-w-2xl">
@@ -159,6 +168,23 @@ export default function LineupClient({ id, matchOpponent, members, initialStarte
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">スターティングメンバー</h1>
         <p className="text-gray-500 dark:text-gray-400 text-sm">vs {matchOpponent}</p>
       </div>
+
+      {/* グループ絞り込み */}
+      {groups.length > 0 && (
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">グループ:</span>
+          <select
+            value={selectedGroupId}
+            onChange={e => setSelectedGroupId(e.target.value)}
+            className="flex-1 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5 text-sm dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500"
+          >
+            <option value="">全メンバー（背番号なし）</option>
+            {groups.map(g => (
+              <option key={g.id} value={g.id}>{g.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="flex rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
         <button onClick={() => setTab('participant')} className={tabClass('participant')}>
@@ -179,12 +205,12 @@ export default function LineupClient({ id, matchOpponent, members, initialStarte
       {tab === 'participant' && (
         <div className="space-y-2">
           <p className="text-sm text-gray-400 dark:text-gray-500">当日参加するメンバーを選択してください</p>
-          {members.length === 0 && (
+          {visibleMembers.length === 0 && (
             <div className="bg-white dark:bg-gray-900 rounded-xl p-8 shadow-sm text-center text-gray-400 dark:text-gray-500 text-sm">
-              メンバーが登録されていません
+              {selectedGroupId ? 'このグループにメンバーがいません' : 'メンバーが登録されていません'}
             </div>
           )}
-          {members.map(member => {
+          {visibleMembers.map(member => {
             const isParticipant = participants.has(member.id)
             return (
               <button
@@ -197,10 +223,7 @@ export default function LineupClient({ id, matchOpponent, members, initialStarte
                 }`}
               >
                 <div className="flex-1">
-                  <span className="font-medium text-gray-900 dark:text-white">
-                    {member.number != null && <span className="text-gray-400 dark:text-gray-500 mr-1">#{member.number}</span>}
-                    {member.name}
-                  </span>
+                  <span className="font-medium text-gray-900 dark:text-white">{memberLabel(member)}</span>
                   {member.position && <span className="text-xs text-gray-400 dark:text-gray-500 ml-2">{member.position}</span>}
                 </div>
                 {isParticipant
@@ -221,9 +244,7 @@ export default function LineupClient({ id, matchOpponent, members, initialStarte
               あと <span className="font-medium text-gray-600 dark:text-gray-400">{remaining}人</span> 選択できます（ベンチタブから追加）
             </p>
           )}
-          {remaining === 0 && (
-            <p className="text-sm text-green-600 font-medium">先発メンバーが揃いました</p>
-          )}
+          {remaining === 0 && <p className="text-sm text-green-600 font-medium">先発メンバーが揃いました</p>}
           {starters.length === 0 && (
             <div className="bg-white dark:bg-gray-900 rounded-xl p-8 shadow-sm text-center text-gray-400 dark:text-gray-500 text-sm">
               ベンチタブからメンバーを追加してください
@@ -236,15 +257,10 @@ export default function LineupClient({ id, matchOpponent, members, initialStarte
               <div key={starter.memberId} className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border-2 border-green-500">
                 <div className="flex items-center gap-3 p-4">
                   <div className="flex-1">
-                    <span className="font-medium text-gray-900 dark:text-white">
-                      {member.number != null && <span className="text-gray-400 dark:text-gray-500 mr-1">#{member.number}</span>}
-                      {member.name}
-                    </span>
+                    <span className="font-medium text-gray-900 dark:text-white">{memberLabel(member)}</span>
                   </div>
-                  <button
-                    onClick={() => removeFromStarters(starter.memberId)}
-                    className="text-xs text-red-400 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50"
-                  >
+                  <button onClick={() => removeFromStarters(starter.memberId)}
+                    className="text-xs text-red-400 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50">
                     外す
                   </button>
                 </div>
@@ -307,10 +323,7 @@ export default function LineupClient({ id, matchOpponent, members, initialStarte
               }`}
             >
               <div className="flex-1">
-                <span className="font-medium text-gray-900 dark:text-white">
-                  {member.number != null && <span className="text-gray-400 dark:text-gray-500 mr-1">#{member.number}</span>}
-                  {member.name}
-                </span>
+                <span className="font-medium text-gray-900 dark:text-white">{memberLabel(member)}</span>
                 {member.position && <span className="text-xs text-gray-400 dark:text-gray-500 ml-2">{member.position}</span>}
               </div>
               {remaining > 0 && <span className="text-xs text-green-600 dark:text-green-400 font-medium">先発に追加</span>}
@@ -332,7 +345,7 @@ export default function LineupClient({ id, matchOpponent, members, initialStarte
               <FormationField
                 players={starters.map(s => {
                   const member = members.find(m => m.id === s.memberId)
-                  return { id: s.memberId, number: member?.number ?? null, name: member?.name ?? '', x: s.fieldX, y: s.fieldY }
+                  return { id: s.memberId, number: numberOf(s.memberId), name: member?.name ?? '', x: s.fieldX, y: s.fieldY }
                 })}
                 shirtColor={shirtColor}
                 onMove={handleFieldMove}

@@ -12,9 +12,10 @@ type Props = {
   initialTag: string
   initialDuration: number | null
   initialShirtColor: 'white' | 'blue' | 'red'
+  tagSuggestions: string[]
 }
 
-export default function EditForm({ id, initialOpponent, initialDate, initialTag, initialDuration, initialShirtColor }: Props) {
+export default function EditForm({ id, initialOpponent, initialDate, initialTag, initialDuration, initialShirtColor, tagSuggestions }: Props) {
   const router = useRouter()
   const [opponent, setOpponent] = useState(initialOpponent)
   const [date, setDate] = useState(initialDate)
@@ -94,7 +95,7 @@ export default function EditForm({ id, initialOpponent, initialDate, initialTag,
             className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-800 dark:text-gray-100"
           />
           <datalist id="tag-suggestions">
-            {MATCH_TAGS.map(t => <option key={t} value={t} />)}
+            {[...new Set([...MATCH_TAGS, ...tagSuggestions])].sort().map(t => <option key={t} value={t} />)}
           </datalist>
         </div>
 

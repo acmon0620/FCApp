@@ -14,12 +14,18 @@ export default async function MemberDetailPage({ params }: Props) {
 
   const supabase = await createClient()
 
-  const { data: member } = await supabase
-    .from('members')
-    .select('*')
-    .eq('id', id)
-    .eq('team_id', me.team_id)
-    .single()
+  const [{ data: member }, { data: memberGroupRows }] = await Promise.all([
+    supabase
+      .from('members')
+      .select('*')
+      .eq('id', id)
+      .eq('team_id', me.team_id)
+      .single(),
+    supabase
+      .from('member_groups')
+      .select('jersey_number, group_id, groups!inner(name)')
+      .eq('member_id', id),
+  ])
 
   if (!member) redirect('/members')
 
@@ -77,8 +83,26 @@ export default async function MemberDetailPage({ params }: Props) {
       <div className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm">
         <h2 className="font-semibold text-gray-800 dark:text-gray-100 mb-3">プロフィール</h2>
         <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-          <dt className="text-gray-500 dark:text-gray-400">背番号</dt>
-          <dd className="text-gray-900 dark:text-white">#{member.number ?? '-'}</dd>
+          <dt className="text-gray-500 dark:text-gray-400">所属グループ</dt>
+          <dd className="text-gray-900 dark:text-white">
+            {(memberGroupRows ?? []).length === 0 ? (
+              <span className="text-gray-400 dark:text-gray-500">未所属</span>
+            ) : (
+              <div className="flex flex-col gap-0.5">
+                {(memberGroupRows ?? []).map(mg => {
+                  const g = (mg.groups as unknown as { name: string } | null)
+                  return (
+                    <span key={mg.group_id}>
+                      {g?.name ?? ''}
+                      {mg.jersey_number != null && (
+                        <span className="ml-1 text-gray-500 dark:text-gray-400">#{mg.jersey_number}</span>
+                      )}
+                    </span>
+                  )
+                })}
+              </div>
+            )}
+          </dd>
           <dt className="text-gray-500 dark:text-gray-400">ポジション</dt>
           <dd className="text-gray-900 dark:text-white">{member.position ?? '-'}</dd>
           <dt className="text-gray-500 dark:text-gray-400">利き足</dt>

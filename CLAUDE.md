@@ -65,6 +65,23 @@ CREATE TABLE IF NOT EXISTS member_invites (
 );
 ALTER TABLE member_invites ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "service_role_only" ON member_invites USING (false);
+
+-- グループ管理（Aチーム・Bチーム・シニアなどの括り）
+-- 完全な SQL は supabase/migrations/groups.sql を参照
+CREATE TABLE IF NOT EXISTS groups (
+  id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  team_id    uuid NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+  name       text NOT NULL,
+  sort_order integer NOT NULL DEFAULT 0,
+  created_at timestamptz DEFAULT now()
+);
+-- メンバーとグループの多対多。背番号はグループ単位で管理（members.number は廃止予定）
+CREATE TABLE IF NOT EXISTS member_groups (
+  member_id     uuid NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+  group_id      uuid NOT NULL REFERENCES groups(id)  ON DELETE CASCADE,
+  jersey_number integer,
+  PRIMARY KEY (member_id, group_id)
+);
 ```
 
 ### SECURITY DEFINER 関数（既存）
@@ -87,6 +104,15 @@ CREATE POLICY "service_role_only" ON member_invites USING (false);
 
 ### ロール変更
 `toggleMemberRole()` Server Action が role を admin ↔ member に切り替え。自分自身のロールは変更不可。
+
+### グループ管理
+`/admin/members` でグループ（Aチーム・Bチームなど）を作成・管理。
+- `groups` テーブルにグループを登録し、`member_groups` でメンバーを多対多に紐付け
+- 背番号（`jersey_number`）はグループ単位で管理。同一メンバーがグループごとに異なる背番号を持てる
+- Server Actions: `createGroup / renameGroup / deleteGroup / upsertMemberGroup / removeMemberFromGroup`（`src/app/(app)/admin/members/actions.ts`）
+- `/members?group=<id>` のURLパラメータでグループ別表示に切り替え
+- スタメン設定画面（`/matches/[id]/lineup`）でもグループ絞り込みが可能
+- `members.number` カラムは廃止予定（DBには残存）。背番号は必ず `member_groups.jersey_number` を参照すること
 
 ---
 

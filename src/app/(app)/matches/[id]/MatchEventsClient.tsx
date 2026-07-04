@@ -34,6 +34,7 @@ const EVENT_ICON: Record<string, string> = {
   yellow_card: '🟨',
   red_card: '🟥',
   opponent_goal: '⚽',
+  own_goal: '⚽',
 }
 
 export default function MatchEventsClient({
@@ -51,7 +52,7 @@ export default function MatchEventsClient({
   }, [initialEvents])
 
   const [showForm, setShowForm] = useState(false)
-  const [eventType, setEventType] = useState<'goal' | 'yellow_card' | 'red_card' | 'opponent_goal'>('goal')
+  const [eventType, setEventType] = useState<'goal' | 'yellow_card' | 'red_card' | 'opponent_goal' | 'own_goal'>('goal')
   const [eventMember, setEventMember] = useState('')
   const [assistMember, setAssistMember] = useState('')
   const [eventMinute, setEventMinute] = useState(0)
@@ -111,6 +112,36 @@ export default function MatchEventsClient({
           }].sort((a, b) => a.minute - b.minute)
         )
       }
+    } else if (eventType === 'own_goal') {
+      const m = eventMembers.find(mem => mem.id === eventMember)
+
+      const [, { error: insertError }] = await Promise.all([
+        supabase.from('matches').update({ score_them: scoreThem + 1 }).eq('id', matchId),
+        supabase.from('events').insert({
+          match_id: matchId,
+          member_id: eventMember,
+          type: 'own_goal',
+          minute: eventMinute,
+        }),
+      ])
+
+      if (insertError) {
+        console.error('[MatchEventsClient] own_goal insert failed:', insertError)
+      } else {
+        setEvents(prev =>
+          [...prev, {
+            id: `temp-${Date.now()}`,
+            type: 'own_goal',
+            minute: eventMinute,
+            member_id: eventMember,
+            member_name: m?.name ?? null,
+            assisted_by: null,
+            assisted_by_name: null,
+            opponent_scorer: null,
+            opponent_assist: null,
+          }].sort((a, b) => a.minute - b.minute)
+        )
+      }
     } else {
       const m = eventMembers.find(mem => mem.id === eventMember)
       const a = assistMember ? eventMembers.find(mem => mem.id === assistMember) : null
@@ -157,7 +188,7 @@ export default function MatchEventsClient({
     await supabase.from('events').delete().eq('id', ev.id)
     if (ev.type === 'goal') {
       await supabase.from('matches').update({ score_us: Math.max(0, scoreUs - 1) }).eq('id', matchId)
-    } else if (ev.type === 'opponent_goal') {
+    } else if (ev.type === 'opponent_goal' || ev.type === 'own_goal') {
       await supabase.from('matches').update({ score_them: Math.max(0, scoreThem - 1) }).eq('id', matchId)
     }
     router.refresh()
@@ -179,8 +210,14 @@ export default function MatchEventsClient({
 
       {showForm && (
         <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 mb-4 space-y-2">
-          <div className="grid grid-cols-2 gap-2">
-            {(['goal', 'yellow_card', 'red_card', 'opponent_goal'] as const).map(t => (
+          <div className="grid grid-cols-3 gap-2">
+            {([
+              ['goal', '自チーム得点'],
+              ['opponent_goal', '相手得点'],
+              ['own_goal', 'オウンゴール'],
+              ['yellow_card', '警告'],
+              ['red_card', '退場'],
+            ] as const).map(([t, label]) => (
               <button
                 key={t}
                 onClick={() => setEventType(t)}
@@ -190,7 +227,7 @@ export default function MatchEventsClient({
                     : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400'
                 }`}
               >
-                {EVENT_ICON[t]} {t === 'goal' ? '自チーム得点' : t === 'yellow_card' ? '警告' : t === 'red_card' ? '退場' : '相手得点'}
+                {EVENT_ICON[t]} {label}
               </button>
             ))}
           </div>
@@ -242,6 +279,9 @@ export default function MatchEventsClient({
                   ))}
                 </select>
               )}
+              {eventType === 'own_goal' && (
+                <p className="text-xs text-orange-500 dark:text-orange-400">オウンゴールを記録します（相手チームに+1点）</p>
+              )}
             </>
           )}
 
@@ -265,7 +305,7 @@ export default function MatchEventsClient({
             </button>
             <button
               onClick={addEvent}
-              disabled={saving || (eventType !== 'opponent_goal' && !eventMember)}
+              disabled={saving || (eventType !== 'opponent_goal' && !eventMember)  /* own_goal も member 必須 */}
               className="flex-1 bg-green-600 text-white py-1.5 rounded text-sm disabled:opacity-50"
             >
               {saving ? '記録中...' : '記録'}
@@ -278,6 +318,7 @@ export default function MatchEventsClient({
         <ul className="space-y-2">
           {events.map(ev => {
             const isOpponent = ev.type === 'opponent_goal'
+            const isOwnGoal = ev.type === 'own_goal'
             const scorerName = !isOpponent
               ? (ev.member_name ?? (ev.member_id ? nameLookup[ev.member_id] : null))
               : null
@@ -292,6 +333,11 @@ export default function MatchEventsClient({
                     {ev.opponent_assist && (
                       <span className="text-gray-500 dark:text-gray-400 font-normal">（アシスト: #{ev.opponent_assist}）</span>
                     )}
+                  </span>
+                ) : isOwnGoal ? (
+                  <span className="text-orange-600 dark:text-orange-400 font-medium">
+                    {scorerName}
+                    <span className="font-normal ml-1">（オウンゴール）</span>
                   </span>
                 ) : (
                   <>

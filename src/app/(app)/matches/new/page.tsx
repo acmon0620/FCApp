@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { MATCH_TAGS } from '@/lib/matchTags'
@@ -10,6 +10,21 @@ export default function NewMatchPage() {
   const [opponent, setOpponent] = useState('')
   const [date, setDate] = useState('')
   const [tag, setTag] = useState('')
+  const [tagSuggestions, setTagSuggestions] = useState<string[]>([...MATCH_TAGS])
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return
+      supabase.from('members').select('team_id').eq('id', user.id).single().then(({ data: m }) => {
+        if (!m) return
+        supabase.from('matches').select('tag').eq('team_id', m.team_id).not('tag', 'is', null).then(({ data: rows }) => {
+          const custom = (rows ?? []).map(r => r.tag as string).filter(Boolean)
+          setTagSuggestions([...new Set([...MATCH_TAGS, ...custom])].sort())
+        })
+      })
+    })
+  }, [])
   const [duration, setDuration] = useState('')
   const [shirtColor, setShirtColor] = useState<'white' | 'blue' | 'red'>('white')
   const [loading, setLoading] = useState(false)
@@ -97,7 +112,7 @@ export default function NewMatchPage() {
             className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-800 dark:text-gray-100"
           />
           <datalist id="tag-suggestions">
-            {MATCH_TAGS.map(t => <option key={t} value={t} />)}
+            {tagSuggestions.map(t => <option key={t} value={t} />)}
           </datalist>
           <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">自由に入力できます。候補から選ぶことも可能です。</p>
         </div>

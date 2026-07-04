@@ -26,26 +26,31 @@ export default async function LineupPage({ params }: Props) {
   if (!member || member.role !== 'admin') redirect(`/matches/${id}`)
 
   const supabase = await createClient()
-  const [matchRes, membersRes, lineupsRes] = await Promise.all([
+  const [matchRes, membersRes, lineupsRes, groupsRes, memberGroupsRes] = await Promise.all([
     supabase.from('matches').select('opponent, shirt_color').eq('id', id).eq('team_id', member.team_id).single(),
     supabase
       .from('members')
-      .select('id, name, number, position')
+      .select('id, name, position')
       .eq('team_id', member.team_id)
       .eq('is_system_account', false)
       .is('deleted_at', null)
-      .order('number', { ascending: true, nullsFirst: false }),
+      .order('name', { ascending: true }),
     supabase
       .from('lineups')
       .select('member_id, position, field_x, field_y, start_minute, end_minute')
       .eq('match_id', id),
+    supabase
+      .from('groups')
+      .select('id, name, sort_order')
+      .eq('team_id', member.team_id)
+      .order('sort_order', { ascending: true }),
+    supabase
+      .from('member_groups')
+      .select('member_id, group_id, jersey_number'),
   ])
 
   if (!matchRes.data) redirect('/matches')
 
-  // start_minute=0: 先発（end_minute は記録完了後に設定される場合あり）
-  // start_minute=null, end_minute=null: ベンチ
-  // start_minute>0: 交代出場選手（除外）
   const allEntries = lineupsRes.data ?? []
   const starterEntries = allEntries.filter(l => l.start_minute === 0)
   const participantEntries = allEntries.filter(
@@ -66,6 +71,12 @@ export default async function LineupPage({ params }: Props) {
       id={id}
       matchOpponent={matchRes.data.opponent}
       members={membersRes.data ?? []}
+      groups={groupsRes.data ?? []}
+      memberGroups={(memberGroupsRes.data ?? []).map(mg => ({
+        memberId: mg.member_id,
+        groupId: mg.group_id,
+        jerseyNumber: mg.jersey_number,
+      }))}
       initialStarters={initialStarters}
       initialParticipantIds={initialParticipantIds}
       shirtColor={(matchRes.data.shirt_color as 'white' | 'blue' | 'red') ?? 'white'}

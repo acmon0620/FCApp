@@ -126,3 +126,82 @@ export async function toggleMemberRole(memberId: string): Promise<{ error?: stri
   if (error) return { error: error.message }
   return {}
 }
+
+// ─── グループ管理 ──────────────────────────────────────────────────────────────
+
+export async function createGroup(name: string): Promise<{ id?: string; error?: string }> {
+  const me = await getAdminMember()
+  if (!me) return { error: '権限がありません' }
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('groups')
+    .insert({ team_id: me.team_id, name })
+    .select('id')
+    .single()
+
+  if (error) return { error: error.message }
+  return { id: data.id }
+}
+
+export async function renameGroup(groupId: string, name: string): Promise<{ error?: string }> {
+  const me = await getAdminMember()
+  if (!me) return { error: '権限がありません' }
+
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('groups')
+    .update({ name })
+    .eq('id', groupId)
+    .eq('team_id', me.team_id)
+
+  if (error) return { error: error.message }
+  return {}
+}
+
+export async function deleteGroup(groupId: string): Promise<{ error?: string }> {
+  const me = await getAdminMember()
+  if (!me) return { error: '権限がありません' }
+
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('groups')
+    .delete()
+    .eq('id', groupId)
+    .eq('team_id', me.team_id)
+
+  if (error) return { error: error.message }
+  return {}
+}
+
+export async function upsertMemberGroup(
+  memberId: string,
+  groupId: string,
+  jerseyNumber: number | null,
+): Promise<{ error?: string }> {
+  const me = await getAdminMember()
+  if (!me) return { error: '権限がありません' }
+
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('member_groups')
+    .upsert({ member_id: memberId, group_id: groupId, jersey_number: jerseyNumber })
+
+  if (error) return { error: error.message }
+  return {}
+}
+
+export async function removeMemberFromGroup(memberId: string, groupId: string): Promise<{ error?: string }> {
+  const me = await getAdminMember()
+  if (!me) return { error: '権限がありません' }
+
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('member_groups')
+    .delete()
+    .eq('member_id', memberId)
+    .eq('group_id', groupId)
+
+  if (error) return { error: error.message }
+  return {}
+}
