@@ -35,7 +35,10 @@ const EVENT_ICON: Record<string, string> = {
   red_card: '🟥',
   opponent_goal: '⚽',
   own_goal: '⚽',
+  opponent_own_goal: '⚽',
 }
+
+const JERSEY_OPTIONS = Array.from({ length: 100 }, (_, i) => i)
 
 export default function MatchEventsClient({
   matchId, scoreUs, scoreThem, initialEvents, eventMembers, memberNameById, isAdmin, opponentName,
@@ -43,17 +46,14 @@ export default function MatchEventsClient({
   const router = useRouter()
   const supabase = createClient()
 
-  // ローカル状態でイベントを管理（router.refresh() を待たずに即時表示）
   const [events, setEvents] = useState<Event[]>(initialEvents)
 
-  // router.refresh() 完了後、サーバーからの最新データで同期
   useEffect(() => {
     setEvents(initialEvents)
   }, [initialEvents])
 
   const [showForm, setShowForm] = useState(false)
   const [eventType, setEventType] = useState<'goal' | 'yellow_card' | 'red_card' | 'opponent_goal'>('goal')
-  const [isOwnGoal, setIsOwnGoal] = useState(false)
   const [eventMember, setEventMember] = useState('')
   const [assistMember, setAssistMember] = useState('')
   const [eventMinute, setEventMinute] = useState(0)
@@ -61,7 +61,6 @@ export default function MatchEventsClient({
   const [opponentAssist, setOpponentAssist] = useState('')
   const [saving, setSaving] = useState(false)
 
-  // eventMembers の名前もルックアップに含める
   const nameLookup = useMemo(() => ({
     ...memberNameById,
     ...Object.fromEntries(eventMembers.map(m => [m.id, m.name])),
@@ -76,7 +75,6 @@ export default function MatchEventsClient({
     setOpponentScorer('')
     setOpponentAssist('')
     setEventType('goal')
-    setIsOwnGoal(false)
     setShowForm(true)
   }
 
@@ -114,29 +112,27 @@ export default function MatchEventsClient({
           }].sort((a, b) => a.minute - b.minute)
         )
       }
-    } else if (eventType === 'goal' && isOwnGoal) {
-      const m = eventMembers.find(mem => mem.id === eventMember)
-
+    } else if (eventType === 'goal' && eventMember === '__OG__') {
+      // 相手チームのオウンゴール → 自チームに得点
       const [, { error: insertError }] = await Promise.all([
-        supabase.from('matches').update({ score_them: scoreThem + 1 }).eq('id', matchId),
+        supabase.from('matches').update({ score_us: scoreUs + 1 }).eq('id', matchId),
         supabase.from('events').insert({
           match_id: matchId,
-          member_id: eventMember,
-          type: 'own_goal',
+          type: 'opponent_own_goal',
           minute: eventMinute,
         }),
       ])
 
       if (insertError) {
-        console.error('[MatchEventsClient] own_goal insert failed:', insertError)
+        console.error('[MatchEventsClient] opponent_own_goal insert failed:', insertError)
       } else {
         setEvents(prev =>
           [...prev, {
             id: `temp-${Date.now()}`,
-            type: 'own_goal',
+            type: 'opponent_own_goal',
             minute: eventMinute,
-            member_id: eventMember,
-            member_name: m?.name ?? null,
+            member_id: null,
+            member_name: null,
             assisted_by: null,
             assisted_by_name: null,
             opponent_scorer: null,
@@ -180,15 +176,13 @@ export default function MatchEventsClient({
 
     setShowForm(false)
     setSaving(false)
-    router.refresh() // スコア表示（サーバーコンポーネント）を更新
+    router.refresh()
   }
 
   async function deleteEvent(ev: Event) {
-    // 即時反映
     setEvents(prev => prev.filter(e => e.id !== ev.id))
-
     await supabase.from('events').delete().eq('id', ev.id)
-    if (ev.type === 'goal') {
+    if (ev.type === 'goal' || ev.type === 'opponent_own_goal') {
       await supabase.from('matches').update({ score_us: Math.max(0, scoreUs - 1) }).eq('id', matchId)
     } else if (ev.type === 'opponent_goal' || ev.type === 'own_goal') {
       await supabase.from('matches').update({ score_them: Math.max(0, scoreThem - 1) }).eq('id', matchId)
@@ -221,7 +215,7 @@ export default function MatchEventsClient({
             ] as const).map(([t, label]) => (
               <button
                 key={t}
-                onClick={() => { setEventType(t); setIsOwnGoal(false) }}
+                onClick={() => { setEventType(t); setEventMember(''); setAssistMember('') }}
                 className={`py-1.5 rounded text-sm border ${
                   eventType === t
                     ? 'border-green-600 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300'
@@ -236,61 +230,59 @@ export default function MatchEventsClient({
           {eventType === 'opponent_goal' ? (
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="text-xs text-gray-500 dark:text-gray-400 block mb-0.5">得点者 背番号</label>
-                <input
-                  type="text"
+                <label className="text-xs text-gray-500 dark:text-gray-400 block mb-0.5">得点 背番号</label>
+                <select
                   value={opponentScorer}
                   onChange={e => setOpponentScorer(e.target.value)}
-                  placeholder="例：10"
                   className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 text-sm dark:bg-gray-800 dark:text-gray-100"
-                />
+                >
+                  <option value="">（なし）</option>
+                  <option value="OG">オウンゴール</option>
+                  {JERSEY_OPTIONS.map(n => (
+                    <option key={n} value={String(n)}>{n}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="text-xs text-gray-500 dark:text-gray-400 block mb-0.5">アシスト 背番号</label>
-                <input
-                  type="text"
+                <select
                   value={opponentAssist}
                   onChange={e => setOpponentAssist(e.target.value)}
-                  placeholder="例：7"
                   className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 text-sm dark:bg-gray-800 dark:text-gray-100"
-                />
+                >
+                  <option value="">（なし）</option>
+                  {JERSEY_OPTIONS.map(n => (
+                    <option key={n} value={String(n)}>{n}</option>
+                  ))}
+                </select>
               </div>
             </div>
           ) : (
             <>
               <select
                 value={eventMember}
-                onChange={e => setEventMember(e.target.value)}
+                onChange={e => { setEventMember(e.target.value); setAssistMember('') }}
                 className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 text-sm dark:bg-gray-800 dark:text-gray-100"
               >
                 <option value="">選手を選択</option>
+                {eventType === 'goal' && (
+                  <option value="__OG__">オウンゴール（相手チームの自殺点）</option>
+                )}
                 {eventMembers.map(m => (
                   <option key={m.id} value={m.id}>{memberLabel(m)}</option>
                 ))}
               </select>
-              {eventType === 'goal' && (
-                <>
-                  <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={isOwnGoal}
-                      onChange={e => { setIsOwnGoal(e.target.checked); setAssistMember('') }}
-                    />
-                    オウンゴール（相手チームに+1点）
-                  </label>
-                  {!isOwnGoal && (
-                    <select
-                      value={assistMember}
-                      onChange={e => setAssistMember(e.target.value)}
-                      className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 text-sm dark:bg-gray-800 dark:text-gray-100"
-                    >
-                      <option value="">アシスト選手（なければスキップ）</option>
-                      {eventMembers.filter(m => m.id !== eventMember).map(m => (
-                        <option key={m.id} value={m.id}>{memberLabel(m)}</option>
-                      ))}
-                    </select>
-                  )}
-                </>
+              {eventType === 'goal' && eventMember && eventMember !== '__OG__' && (
+                <select
+                  value={assistMember}
+                  onChange={e => setAssistMember(e.target.value)}
+                  className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 text-sm dark:bg-gray-800 dark:text-gray-100"
+                >
+                  <option value="">アシスト選手（なければスキップ）</option>
+                  {eventMembers.filter(m => m.id !== eventMember).map(m => (
+                    <option key={m.id} value={m.id}>{memberLabel(m)}</option>
+                  ))}
+                </select>
               )}
             </>
           )}
@@ -315,7 +307,7 @@ export default function MatchEventsClient({
             </button>
             <button
               onClick={addEvent}
-              disabled={saving || (eventType !== 'opponent_goal' && !eventMember)  /* own_goal も member 必須 */}
+              disabled={saving || (eventType !== 'opponent_goal' && !eventMember)}
               className="flex-1 bg-green-600 text-white py-1.5 rounded text-sm disabled:opacity-50"
             >
               {saving ? '記録中...' : '記録'}
@@ -328,8 +320,9 @@ export default function MatchEventsClient({
         <ul className="space-y-2">
           {events.map(ev => {
             const isOpponent = ev.type === 'opponent_goal'
-            const isOwnGoal = ev.type === 'own_goal'
-            const scorerName = !isOpponent
+            const isOwnGoalEv = ev.type === 'own_goal'
+            const isOpponentOwnGoal = ev.type === 'opponent_own_goal'
+            const scorerName = !isOpponent && !isOpponentOwnGoal
               ? (ev.member_name ?? (ev.member_id ? nameLookup[ev.member_id] : null))
               : null
             const assisterName = ev.assisted_by_name ?? (ev.assisted_by ? nameLookup[ev.assisted_by] : null)
@@ -339,12 +332,22 @@ export default function MatchEventsClient({
                 <span className="text-gray-500 dark:text-gray-400 w-10">{ev.minute}&apos;</span>
                 {isOpponent ? (
                   <span className="text-red-600 font-medium">
-                    {opponentName}{ev.opponent_scorer ? ` #${ev.opponent_scorer}` : ''}
-                    {ev.opponent_assist && (
+                    {opponentName}
+                    {ev.opponent_scorer === 'OG' ? (
+                      <span className="font-normal ml-1">（自チームのオウンゴール）</span>
+                    ) : ev.opponent_scorer ? (
+                      ` #${ev.opponent_scorer}`
+                    ) : ''}
+                    {ev.opponent_scorer !== 'OG' && ev.opponent_assist && (
                       <span className="text-gray-500 dark:text-gray-400 font-normal">（アシスト: #{ev.opponent_assist}）</span>
                     )}
                   </span>
-                ) : isOwnGoal ? (
+                ) : isOpponentOwnGoal ? (
+                  <span className="font-medium text-gray-900 dark:text-white">
+                    オウンゴール
+                    <span className="font-normal ml-1 text-gray-500 dark:text-gray-400">（相手チームの自殺点）</span>
+                  </span>
+                ) : isOwnGoalEv ? (
                   <span className="text-orange-600 dark:text-orange-400 font-medium">
                     {scorerName}
                     <span className="font-normal ml-1">（オウンゴール）</span>
