@@ -70,7 +70,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
       <div className="bg-white dark:bg-gray-900 p-8 rounded-xl shadow-sm w-full max-w-md">
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">⚽ サッカーチーム管理</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">⚽ FootBoard</h1>
         </div>
 
         <Suspense fallback={null}>
